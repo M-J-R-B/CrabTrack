@@ -1,0 +1,99 @@
+<resources>
+    <string name="app_name">CrabTrack</string>
+    
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_molting">Molting</string>
+    
+    <!-- Dashboard -->
+    <string name="dashboard_title">Sensor Dashboard</string>
+    <string name="refresh_data">Pull to refresh</string>
+    <string name="alert_indicator">Alert Status</string>
+    
+    <!-- Sensor Types -->
+    <string name="sensor_ph">pH</string>
+    <string name="sensor_dissolved_oxygen">Dissolved Oxygen</string>
+    <string name="sensor_salinity">Salinity</string>
+    <string name="sensor_ammonia">Ammonia</string>
+    <string name="sensor_temperature">Temperature</string>
+    <string name="sensor_water_level">Water Level</string>
+    
+    <!-- Alert Levels -->
+    <string name="alert_normal">Normal</string>
+    <string name="alert_warning">Warning</string>
+    <string name="alert_critical">Critical</string>
+    
+    <!-- Threshold Settings -->
+    <string name="threshold_settings_title">Threshold Settings</string>
+    <string name="warning_min">Warning Min</string>
+    <string name="warning_max">Warning Max</string>
+    <string name="critical_min">Critical Min</string>
+    <string name="critical_max">Critical Max</string>
+    <string name="not_set">Not set</string>
+    <string name="edit">Edit</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="reset_defaults">Reset to Defaults</string>
+    
+    <!-- Messages -->
+    <string name="threshold_updated">Threshold updated successfully</string>
+    <string name="thresholds_reset">All thresholds reset to defaults</string>
+    <string name="error_loading_data">Failed to load data</string>
+    <string name="error_saving_threshold">Failed to save threshold</string>
+    <string name="dismiss">Dismiss</string>
+    
+    <!-- Units -->
+    <string name="unit_ph"></string>
+    <string name="unit_mg_per_l">mg/L</string>
+    <string name="unit_ppt">ppt</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_cm">cm</string>
+    
+    <!-- Molting -->
+    <string name="molting_title">Molt Monitoring</string>
+    <string name="molt_state_label">Current State</string>
+    <string name="risk_level_label">Risk Level</string>
+    <string name="care_window_label">Care Window Remaining</string>
+    <string name="recent_events_label">Recent Events</string>
+    <string name="molt_state_none">None</string>
+    <string name="molt_state_premolt">Pre-molt</string>
+    <string name="molt_state_ecdysis">Ecdysis</string>
+    <string name="molt_state_postmolt_risk">Post-molt Risk</string>
+    <string name="molt_state_postmolt_safe">Post-molt Safe</string>
+    <string name="confidence_format">%d%% confidence</string>
+    <string name="time_format" formatted="false">%02d:%02d:%02d</string>
+    <string name="no_care_window">No active window</string>
+    <string name="no_recent_events">No recent events</string>
+    
+    <!-- Camera -->
+    <string name="nav_camera">Camera</string>
+    <string name="camera_title">Live Streams</string>
+    <string name="no_camera_streams">No camera streams available</string>
+    <string name="stream_connecting">Connecting…</string>
+    <string name="stream_buffering">Buffering…</string>
+    <string name="stream_error">Connection Error</string>
+    <string name="stream_offline">Offline</string>
+    <string name="stream_online">Live</string>
+    <string name="stream_play">Play</string>
+    <string name="stream_stop">Stop</string>
+    <string name="quality">Quality</string>
+    <string name="live">LIVE</string>
+    <string name="take_snapshot">Take Snapshot</string>
+    <string name="snapshot_saved">Snapshot saved</string>
+    <string name="stream_started">Stream started</string>
+    <string name="stream_stopped">Stream stopped</string>
+    <string name="stream_error_msg">Failed to start stream</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_sensor_icon">Sensor icon</string>
+    <string name="cd_alert_indicator">Alert indicator</string>
+    <string name="cd_edit_threshold">Edit threshold</string>
+    <string name="cd_molt_state_badge">Molt state badge</string>
+    <string name="cd_risk_level_badge">Risk level badge</string>
+    <string name="cd_camera_icon">Camera icon</string>
+    <string name="cd_play_stream">Play stream</string>
+    <string name="cd_stop_stream">Stop stream</string>
+    <string name="cd_take_snapshot">Take snapshot</string>
+</resources>

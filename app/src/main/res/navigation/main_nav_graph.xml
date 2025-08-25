@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.crabtrack.app.presentation.dashboard.DashboardFragment"
+        android:label="Dashboard" />
+
+    <fragment
+        android:id="@+id/alertsFragment"
+        android:name="com.crabtrack.app.ui.alerts.AlertsFragment"
+        android:label="Alerts" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.crabtrack.app.ui.settings.SettingsFragment"
+        android:label="Settings" />
+
+    <fragment
+        android:id="@+id/moltingFragment"
+        android:name="com.crabtrack.app.ui.molting.MoltingFragment"
+        android:label="Molting" />
+
+    <fragment
+        android:id="@+id/cameraFragment"
+        android:name="com.crabtrack.app.ui.camera.CameraFragment"
+        android:label="Camera" />
+
+</navigation>

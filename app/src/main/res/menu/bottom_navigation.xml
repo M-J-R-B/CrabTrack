@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <item
+        android:id="@+id/dashboardFragment"
+        android:icon="@drawable/ic_dashboard"
+        android:title="@string/nav_dashboard" />
+    
+    <item
+        android:id="@+id/alertsFragment"
+        android:icon="@drawable/ic_warning"
+        android:title="@string/nav_alerts" />
+    
+    <item
+        android:id="@+id/cameraFragment"
+        android:icon="@drawable/ic_camera"
+        android:title="@string/nav_camera" />
+    
+    <item
+        android:id="@+id/moltingFragment"
+        android:icon="@drawable/ic_molting"
+        android:title="@string/nav_molting" />
+    
+    <item
+        android:id="@+id/settingsFragment"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/nav_settings" />
+        
+</menu>
