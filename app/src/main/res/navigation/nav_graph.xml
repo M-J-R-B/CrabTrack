@@ -1,20 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/loginFragment">
+    app:startDestination="@id/landingScreenFragment">
 
+    <!-- Landing (splash) -->
+    <fragment
+        android:id="@+id/landingScreenFragment"
+        android:name="com.crabtrack.app.LandingScreen"
+        android:label="LandingScreen">
+        <action
+            android:id="@+id/action_landingscreen_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/landingScreenFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Login -->
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.crabtrack.app.ui.login.LoginFragment"
         android:label="Login">
+
+        <!-- Login -> Main -->
         <action
             android:id="@+id/action_login_to_main"
             app:destination="@id/mainFragment"
             app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
+
+        <!-- Login -> Register -->
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment" />
+
+        <action
+            android:id="@+id/action_login_to_forgotPassword"
+            app:destination="@id/forgotPasswordFragment" />
+
     </fragment>
 
+    <fragment
+        android:id="@+id/forgotPasswordFragment"
+        android:name="com.crabtrack.app.ui.login.ForgotPasswordFragment"
+        android:label="Forgot Password"
+        tools:layout="@layout/fragment_forgot_password">
+
+        <!-- Forgot Password -> Login -->
+        <action
+            android:id="@+id/action_forgotPassword_to_login"
+            app:destination="@id/loginFragment" />
+
+    </fragment>
+
+    <!-- Register -->
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.crabtrack.app.ui.login.RegisterFragment"
+        android:label="Register">
+
+        <!-- Register -> Login -->
+        <action
+            android:id="@+id/action_register_to_login"
+            app:destination="@id/loginFragment" />
+
+        <!-- Optional: Register -> Main after successful sign up -->
+        <action
+            android:id="@+id/action_register_to_main"
+            app:destination="@id/mainFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+
+
+    <!-- Main -->
     <fragment
         android:id="@+id/mainFragment"
         android:name="com.crabtrack.app.ui.main.MainFragment"
@@ -25,6 +86,5 @@
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
     </fragment>
-
 
 </navigation>

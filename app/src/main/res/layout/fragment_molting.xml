@@ -11,151 +11,166 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:background="@color/blu"
+        android:gravity="center">
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/titleText"
+        <!-- FULL-SCREEN CARD WRAPPER -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/molting_container_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/molting_title"
-            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-            android:layout_marginBottom="24dp" />
+            android:layout_margin="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true">
 
-        <!-- Status Cards Container -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="24dp">
-
-            <!-- Current State Row -->
+            <!-- Original content moved inside the card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <!-- Title -->
                 <TextView
-                    android:layout_width="0dp"
+                    android:id="@+id/titleText"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/molt_state_label"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:textStyle="bold" />
+                    android:text="@string/molting_title"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+                    android:layout_marginBottom="24dp" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/stateChip"
+                <!-- Status Cards Container -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="24dp">
+
+                    <!-- Current State Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/molt_state_label"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/stateChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/molt_state_none"
+                            android:contentDescription="@string/cd_molt_state_badge"
+                            style="@style/Widget.Material3.Chip.Assist" />
+                    </LinearLayout>
+
+                    <!-- Risk Level Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/risk_level_label"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/riskChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/alert_normal"
+                            android:contentDescription="@string/cd_risk_level_badge"
+                            style="@style/Widget.Material3.Chip.Assist" />
+                    </LinearLayout>
+
+                    <!-- Care Window Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/care_window_label"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/careWindowText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/no_care_window"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:fontFamily="monospace"
+                            android:textColor="?attr/colorPrimary" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="?attr/colorOutlineVariant"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- Recent Events Section -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/recent_events_label"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Events RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/eventsRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="5"
+                    tools:listitem="@layout/item_molt_event" />
+
+                <!-- Empty State -->
+                <TextView
+                    android:id="@+id/emptyStateText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_recent_events"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="gone" />
+
+                <!-- Loading State -->
+                <ProgressBar
+                    android:id="@+id/loadingIndicator"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/molt_state_none"
-                    android:contentDescription="@string/cd_molt_state_badge"
-                    style="@style/Widget.Material3.Chip.Assist" />
+                    android:layout_gravity="center"
+                    android:layout_margin="32dp"
+                    android:visibility="gone" />
 
             </LinearLayout>
-
-            <!-- Risk Level Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/risk_level_label"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/riskChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/alert_normal"
-                    android:contentDescription="@string/cd_risk_level_badge"
-                    style="@style/Widget.Material3.Chip.Assist" />
-
-            </LinearLayout>
-
-            <!-- Care Window Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/care_window_label"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/careWindowText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/no_care_window"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:fontFamily="monospace"
-                    android:textColor="?attr/colorPrimary" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?attr/colorOutlineVariant"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Recent Events Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/recent_events_label"
-            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Events RecyclerView -->
-
-        <!-- Empty State -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/eventsRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            tools:itemCount="5"
-            tools:listitem="@layout/item_molt_event" />
-
-        <TextView
-            android:id="@+id/emptyStateText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/no_recent_events"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:gravity="center"
-            android:padding="32dp"
-            android:visibility="gone" />
-
-        <!-- Loading State -->
-        <ProgressBar
-            android:id="@+id/loadingIndicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="32dp"
-            android:visibility="gone" />
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-
 </ScrollView>
