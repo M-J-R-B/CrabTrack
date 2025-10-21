@@ -14,20 +14,30 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Water Quality Section Header -->
         <TextView
             android:id="@+id/text_settings_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:text="Water Quality Thresholds"
+            android:textColor="@color/white"
             android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-            android:layout_marginTop="24dp"
-            android:layout_marginStart="40dp"/>
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/white" />
 
         <!-- PARENT CARDVIEW (container for all MaterialCardViews) -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true">
@@ -37,27 +47,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
                 <!-- pH Section -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="18dp">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
                             android:text="pH Level"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_marginBottom="12dp" />
+                            android:textColor="@color/text_primary" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -66,69 +78,44 @@
 
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/ph_min_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginEnd="8dp"
-                                android:hint="Min pH">
+                                android:layout_weight="1"
+                                android:hint="Minimum"
+                                app:helperText="e.g., 7.0"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/ph_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/ph_max_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginStart="8dp"
-                                android:hint="Max pH">
+                                android:layout_weight="1"
+                                android:hint="Maximum"
+                                app:helperText="e.g., 8.5"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/ph_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Dissolved Oxygen Section -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Dissolved Oxygen (mg/L)"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_marginBottom="12dp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/do_min_input_layout"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Min DO (mg/L)">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/do_min_input"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="numberDecimal" />
-                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -137,20 +124,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="18dp">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
                             android:text="Salinity (ppt)"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_marginBottom="12dp" />
+                            android:textColor="@color/text_primary" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -159,69 +148,44 @@
 
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/salinity_min_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginEnd="8dp"
-                                android:hint="Min Salinity (ppt)">
+                                android:layout_weight="1"
+                                android:hint="Minimum (ppt)"
+                                app:helperText="e.g., 25"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/salinity_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/salinity_max_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginStart="8dp"
-                                android:hint="Max Salinity (ppt)">
+                                android:layout_weight="1"
+                                android:hint="Maximum (ppt)"
+                                app:helperText="e.g., 35"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/salinity_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Ammonia Section -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Ammonia (mg/L)"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_marginBottom="12dp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/ammonia_max_input_layout"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Max Ammonia (mg/L)">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/ammonia_max_input"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="numberDecimal" />
-                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -230,20 +194,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="18dp">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
                             android:text="Temperature (°C)"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_marginBottom="12dp" />
+                            android:textColor="@color/text_primary" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -252,56 +218,68 @@
 
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/temp_min_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginEnd="8dp"
-                                android:hint="Min Temp (°C)">
+                                android:layout_weight="1"
+                                android:hint="Minimum (°C)"
+                                app:helperText="e.g., 22"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/temp_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/temp_max_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginStart="8dp"
-                                android:hint="Max Temp (°C)">
+                                android:layout_weight="1"
+                                android:hint="Maximum (°C)"
+                                app:helperText="e.g., 28"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/temp_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Water Level Section -->
+                <!-- TDS Section -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="18dp">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Water Level (cm)"
+                            android:layout_marginBottom="16dp"
+                            android:text="TDS (ppm)"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_marginBottom="12dp" />
+                            android:textColor="@color/text_primary" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -309,35 +287,87 @@
                             android:orientation="horizontal">
 
                             <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/level_min_input_layout"
+                                android:id="@+id/tds_min_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginEnd="8dp"
-                                android:hint="Min Level (cm)">
+                                android:layout_weight="1"
+                                android:hint="Minimum (ppm)"
+                                app:helperText="e.g., 100"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/level_min_input"
+                                    android:id="@+id/tds_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/level_max_input_layout"
+                                android:id="@+id/tds_max_input_layout"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:layout_marginStart="8dp"
-                                android:hint="Max Level (cm)">
+                                android:layout_weight="1"
+                                android:hint="Maximum (ppm)"
+                                app:helperText="e.g., 500"
+                                app:helperTextTextColor="@color/text_secondary"
+                                app:boxStrokeColor="@color/blu">
 
                                 <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/level_max_input"
+                                    android:id="@+id/tds_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal" />
+                                    android:inputType="numberDecimal"
+                                    android:textSize="16sp" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Turbidity Section -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:text="Turbidity (NTU)"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/text_primary" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/turbidity_max_input_layout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Maximum (NTU)"
+                            app:helperText="e.g., 5.0"
+                            app:helperTextTextColor="@color/text_secondary"
+                            app:boxStrokeColor="@color/blu">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/turbidity_max_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:textSize="16sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -345,26 +375,32 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
                     android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
+                    android:gravity="center">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_reset_defaults"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="56dp"
+                        android:layout_marginEnd="12dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="Reset"
-                        style="@style/Widget.Material3.Button.OutlinedButton" />
+                        android:text="Reset to Defaults"
+                        android:textSize="15sp"
+                        app:strokeColor="@color/blu"
+                        app:strokeWidth="2dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_save"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="56dp"
+                        android:layout_marginStart="12dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
                         android:backgroundTint="@color/blu"
-                        android:text="Save Settings" />
+                        android:text="Save Settings"
+                        android:textSize="15sp"
+                        app:cornerRadius="8dp" />
                 </LinearLayout>
 
                 <!-- Progress Indicator -->
@@ -379,5 +415,230 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Dispenser Section Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:text="Dispenser"
+            android:textColor="@color/white"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/white" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true">
+
+            <!-- Single stacking container inside CardView -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Solution Section -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Solution Dispenser"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:layout_marginBottom="16dp"
+                            android:gravity="center"
+                            android:textColor="@color/text_primary"/>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:hint="Volume (ml)"
+                            app:helperText="Enter milliliters to dispense"
+                            app:helperTextTextColor="@color/text_secondary"
+                            app:boxStrokeColor="@color/blu"
+                            app:prefixText="Volume: ">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/ml_ph"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:textSize="16sp"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_ph_dispense"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:layout_gravity="center_horizontal"
+                            android:backgroundTint="@color/blu"
+                            android:layout_marginTop="8dp"
+                            android:text="Dispense Solution"
+                            android:textSize="15sp"
+                            app:cornerRadius="8dp"
+                            app:icon="@android:drawable/ic_menu_rotate"
+                            app:iconGravity="textStart" />
+
+                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Feeding Reminder Section Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:text="Feeding Reminder"
+            android:textColor="@color/white"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/white" />
+
+        <!-- Feeding Reminder Section -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardElevation="2dp"
+                    app:cardCornerRadius="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Set Feeding Schedule"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:layout_marginBottom="16dp"
+                            android:gravity="center"
+                            android:textColor="@color/text_primary"/>
+
+                        <!-- Date Picker -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Select Date"
+                            app:helperText="Tap to choose a date"
+                            app:helperTextTextColor="@color/text_secondary"
+                            app:boxStrokeColor="@color/blu"
+                            app:endIconMode="custom"
+                            app:endIconDrawable="@drawable/ic_calendar">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/feeding_date_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true"
+                                android:inputType="none"
+                                android:textSize="16sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Time Picker -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Select Time"
+                            android:layout_marginTop="16dp"
+                            app:helperText="Tap to choose a time"
+                            app:helperTextTextColor="@color/text_secondary"
+                            app:boxStrokeColor="@color/blu"
+                            app:endIconMode="custom"
+                            app:endIconDrawable="@drawable/ic_time">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/feeding_time_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true"
+                                android:inputType="none"
+                                android:textSize="16sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Set Reminder Button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_set_feeding_reminder"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:layout_marginTop="20dp"
+                            android:layout_gravity="center_horizontal"
+                            android:backgroundTint="@color/blu"
+                            android:text="Set Feeding Reminder"
+                            android:textSize="15sp"
+                            app:cornerRadius="8dp"
+                            app:icon="@android:drawable/ic_menu_my_calendar"
+                            app:iconGravity="textStart" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_Logout"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_gravity="center_horizontal"
+            android:backgroundTint="@color/secondary"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:text="Logout"
+            android:textSize="15sp"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_lock_power_off"
+            app:iconGravity="textStart" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

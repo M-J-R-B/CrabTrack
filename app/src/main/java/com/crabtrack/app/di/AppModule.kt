@@ -18,6 +18,8 @@ import com.crabtrack.app.data.source.camera.CameraSource
 import com.crabtrack.app.data.source.camera.MockCameraSource
 import com.crabtrack.app.data.repository.CameraRepository
 import com.crabtrack.app.data.source.remote.FirebaseTelemetrySource
+import com.crabtrack.app.data.source.mqtt.MqttTelemetrySource
+import com.crabtrack.app.data.source.mqtt.MqttConfig
 import com.crabtrack.app.domain.usecase.ComposeMoltGuidanceUseCase
 import com.crabtrack.app.domain.usecase.EvaluateMoltRiskUseCase
 import com.crabtrack.app.domain.usecase.EvaluateThresholdsUseCase
@@ -70,9 +72,11 @@ object AppModule {
     @Singleton
     fun provideTelemetrySource(
         mockTelemetrySource: MockTelemetrySource,
-        firebaseTelemetrySource: FirebaseTelemetrySource
+        firebaseTelemetrySource: FirebaseTelemetrySource,
+        mqttTelemetrySource: MqttTelemetrySource
     ): TelemetrySource {
         return when (BuildConfig.TELEMETRY_SOURCE) {
+            "MQTT" -> mqttTelemetrySource
             "FIREBASE" -> firebaseTelemetrySource
             "MOCK" -> mockTelemetrySource
             else -> mockTelemetrySource // Default to MOCK for safety
@@ -90,8 +94,15 @@ object AppModule {
     fun provideMockTelemetrySource(): MockTelemetrySource {
         return MockTelemetrySource()
     }
-    
-    
+
+    @Provides
+    @Singleton
+    fun provideMqttTelemetrySource(
+        @ApplicationContext context: Context
+    ): MqttTelemetrySource {
+        return MqttTelemetrySource(context, MqttConfig())
+    }
+
     @Provides
     @Singleton
     fun provideTelemetryRepository(

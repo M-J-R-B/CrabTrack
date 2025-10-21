@@ -4,23 +4,35 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("androidx.navigation.safeargs.kotlin")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.crabtrack.app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.crabtrack.app"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField("String", "TELEMETRY_SOURCE", "\"MOCK\"")
+        buildConfigField("String", "TELEMETRY_SOURCE", "\"MQTT\"")
         buildConfigField("String", "MOLT_SOURCE", "\"MOCK\"") // Options: "MOCK", "VISION"
+    }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/NOTICE.md",
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE.txt"
+            )
+        }
     }
 
     buildTypes {
@@ -82,6 +94,8 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("androidx.hilt:hilt-work:1.2.0")
+    implementation(libs.navigation.fragment.ktx)
+    implementation(libs.navigation.ui.ktx)
     kapt("androidx.hilt:hilt-compiler:1.2.0")
     
     // Hilt Dependency Injection
@@ -95,11 +109,30 @@ dependencies {
     
     // Optional: MPAndroidChart for advanced charting
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-    
-    // Firebase BOM
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+
+    // Firebase local libs
+    implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
+    implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
-    
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+
+    // Retrofit for HTTP requests
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Gmail SMTP (JavaMail)
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
+
+    // MQTT Client (Eclipse Paho) - AndroidX compatible versions
+    implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
+    implementation("com.github.hannesa2:paho.mqtt.android:4.2.4")
+
+    // LocalBroadcastManager replacement (required for MQTT library)
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

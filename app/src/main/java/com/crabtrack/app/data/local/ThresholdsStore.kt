@@ -35,6 +35,9 @@ class ThresholdsStore @Inject constructor(
         private val TEMP_MAX_KEY = doublePreferencesKey("temp_max")
         private val LEVEL_MIN_KEY = doublePreferencesKey("level_min")
         private val LEVEL_MAX_KEY = doublePreferencesKey("level_max")
+        private val TDS_MIN_KEY = doublePreferencesKey("tds_min")
+        private val TDS_MAX_KEY = doublePreferencesKey("tds_max")
+        private val TURBIDITY_MAX_KEY = doublePreferencesKey("turbidity_max")
     }
     
     private val _thresholds = MutableStateFlow(Defaults.createDefaultThresholds())
@@ -53,7 +56,7 @@ class ThresholdsStore @Inject constructor(
     fun getThresholds(): Flow<Thresholds> {
         return context.thresholdsDataStore.data.map { preferences ->
             val defaults = Defaults.createDefaultThresholds()
-            
+
             val thresholds = Thresholds(
                 pHMin = preferences[PH_MIN_KEY] ?: defaults.pHMin,
                 pHMax = preferences[PH_MAX_KEY] ?: defaults.pHMax,
@@ -64,9 +67,12 @@ class ThresholdsStore @Inject constructor(
                 tempMin = preferences[TEMP_MIN_KEY] ?: defaults.tempMin,
                 tempMax = preferences[TEMP_MAX_KEY] ?: defaults.tempMax,
                 levelMin = preferences[LEVEL_MIN_KEY] ?: defaults.levelMin,
-                levelMax = preferences[LEVEL_MAX_KEY] ?: defaults.levelMax
+                levelMax = preferences[LEVEL_MAX_KEY] ?: defaults.levelMax,
+                tdsMin = preferences[TDS_MIN_KEY] ?: defaults.tdsMin,
+                tdsMax = preferences[TDS_MAX_KEY] ?: defaults.tdsMax,
+                turbidityMax = preferences[TURBIDITY_MAX_KEY] ?: defaults.turbidityMax
             )
-            
+
             // Update StateFlow with latest values
             _thresholds.value = thresholds
             thresholds
@@ -88,6 +94,9 @@ class ThresholdsStore @Inject constructor(
             preferences[TEMP_MAX_KEY] = thresholds.tempMax
             preferences[LEVEL_MIN_KEY] = thresholds.levelMin
             preferences[LEVEL_MAX_KEY] = thresholds.levelMax
+            preferences[TDS_MIN_KEY] = thresholds.tdsMin
+            preferences[TDS_MAX_KEY] = thresholds.tdsMax
+            preferences[TURBIDITY_MAX_KEY] = thresholds.turbidityMax
         }
         // Update StateFlow immediately
         _thresholds.value = thresholds
@@ -155,5 +164,20 @@ class ThresholdsStore @Inject constructor(
             preferences[LEVEL_MAX_KEY] = max
         }
         _thresholds.value = _thresholds.value.copy(levelMin = min, levelMax = max)
+    }
+
+    suspend fun updateTdsRange(min: Double, max: Double) {
+        context.thresholdsDataStore.edit { preferences ->
+            preferences[TDS_MIN_KEY] = min
+            preferences[TDS_MAX_KEY] = max
+        }
+        _thresholds.value = _thresholds.value.copy(tdsMin = min, tdsMax = max)
+    }
+
+    suspend fun updateTurbidityMax(max: Double) {
+        context.thresholdsDataStore.edit { preferences ->
+            preferences[TURBIDITY_MAX_KEY] = max
+        }
+        _thresholds.value = _thresholds.value.copy(turbidityMax = max)
     }
 }

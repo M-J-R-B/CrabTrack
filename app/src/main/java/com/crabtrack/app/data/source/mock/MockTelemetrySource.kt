@@ -38,7 +38,7 @@ class MockTelemetrySource : TelemetrySource {
     
     private fun generateReading(config: TelemetrySourceConfig): WaterReading {
         val shouldSpike = Random.nextDouble() < config.spikeFrequency
-        
+
         return WaterReading(
             tankId = config.tankId,
             timestampMs = System.currentTimeMillis(),
@@ -47,7 +47,9 @@ class MockTelemetrySource : TelemetrySource {
             salinityPpt = generateSalinity(shouldSpike),
             ammoniaMgL = generateAmmonia(shouldSpike),
             temperatureC = generateTemperature(shouldSpike),
-            waterLevelCm = generateWaterLevel(shouldSpike)
+            waterLevelCm = generateWaterLevel(shouldSpike),
+            tdsPpm = null,  // Mock source doesn't generate TDS
+            turbidityNTU = null  // Mock source doesn't generate turbidity
         )
     }
     

@@ -85,13 +85,25 @@ class WaterParameterCardAdapter(
 
     companion object {
         fun createCardsFromReading(reading: WaterReading, getSeverity: (String) -> AlertSeverity): List<WaterParameterCard> {
-            return listOf(
+            return listOfNotNull(
                 WaterParameterCard("pH", FormatUtils.formatpH(reading.pH), getSeverity("pH"), reading.timestampMs),
-                WaterParameterCard("Dissolved Oxygen", FormatUtils.formatDissolvedOxygen(reading.dissolvedOxygenMgL), getSeverity("Dissolved Oxygen"), reading.timestampMs),
+                reading.dissolvedOxygenMgL?.let {
+                    WaterParameterCard("Dissolved Oxygen", FormatUtils.formatDissolvedOxygen(it), getSeverity("Dissolved Oxygen"), reading.timestampMs)
+                },
                 WaterParameterCard("Salinity", FormatUtils.formatSalinity(reading.salinityPpt), getSeverity("Salinity"), reading.timestampMs),
-                WaterParameterCard("Ammonia", FormatUtils.formatAmmonia(reading.ammoniaMgL), getSeverity("Ammonia"), reading.timestampMs),
+                reading.ammoniaMgL?.let {
+                    WaterParameterCard("Ammonia", FormatUtils.formatAmmonia(it), getSeverity("Ammonia"), reading.timestampMs)
+                },
                 WaterParameterCard("Temperature", FormatUtils.formatTemperature(reading.temperatureC), getSeverity("Temperature"), reading.timestampMs),
-                WaterParameterCard("Water Level", FormatUtils.formatWaterLevel(reading.waterLevelCm), getSeverity("Water Level"), reading.timestampMs)
+                reading.waterLevelCm?.let {
+                    WaterParameterCard("Water Level", FormatUtils.formatWaterLevel(it), getSeverity("Water Level"), reading.timestampMs)
+                },
+                reading.tdsPpm?.let {
+                    WaterParameterCard("TDS", FormatUtils.formatTDS(it), getSeverity("TDS"), reading.timestampMs)
+                },
+                reading.turbidityNTU?.let {
+                    WaterParameterCard("Turbidity", FormatUtils.formatTurbidity(it), getSeverity("Turbidity"), reading.timestampMs)
+                }
             )
         }
     }

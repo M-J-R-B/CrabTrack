@@ -10,5 +10,7 @@ enum class SensorType(
     SALINITY("Salinity", "ppt", null),
     AMMONIA("Ammonia", "mg/L", null),
     TEMPERATURE("Temperature", "°C", null),
-    WATER_LEVEL("Water Level", "cm", null)
+    WATER_LEVEL("Water Level", "cm", null),
+    TDS("TDS", "ppm", null),
+    TURBIDITY("Turbidity", "NTU", null)
 }

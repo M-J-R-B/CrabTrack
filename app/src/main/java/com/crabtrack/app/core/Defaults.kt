@@ -47,7 +47,21 @@ object Defaults {
      */
     const val WATER_LEVEL_MIN = 25.0
     const val WATER_LEVEL_MAX = 35.0
-    
+
+    /**
+     * Default TDS range for mud crabs.
+     * Based on salinity 15-25 ppt → 15,000-25,000 ppm
+     * Optimal range: 13,000 - 27,000 ppm
+     */
+    const val TDS_MIN = 10000.0
+    const val TDS_MAX = 30000.0
+
+    /**
+     * Default turbidity maximum for mud crabs.
+     * Must be below 50 NTU
+     */
+    const val TURBIDITY_MAX = 50.0
+
     /**
      * Creates a Thresholds object with sensible defaults for mud crab aquaculture.
      *
@@ -64,7 +78,10 @@ object Defaults {
             tempMin = TEMPERATURE_MIN,
             tempMax = TEMPERATURE_MAX,
             levelMin = WATER_LEVEL_MIN,
-            levelMax = WATER_LEVEL_MAX
+            levelMax = WATER_LEVEL_MAX,
+            tdsMin = TDS_MIN,
+            tdsMax = TDS_MAX,
+            turbidityMax = TURBIDITY_MAX
         )
     }
 }

@@ -18,7 +18,9 @@ class MockTelemetryDataSource @Inject constructor() {
         SensorType.SALINITY to (15.0 to 35.0),
         SensorType.AMMONIA to (0.0 to 0.5),
         SensorType.TEMPERATURE to (20.0 to 30.0),
-        SensorType.WATER_LEVEL to (50.0 to 100.0)
+        SensorType.WATER_LEVEL to (50.0 to 100.0),
+        SensorType.TDS to (12000.0 to 28000.0),
+        SensorType.TURBIDITY to (0.0 to 45.0)
     )
     
     fun getSensorReadingsFlow(): Flow<List<SensorReading>> = flow {

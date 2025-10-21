@@ -1,6 +1,7 @@
 package com.crabtrack.app.presentation
 
 import android.Manifest
+import com.google.firebase.database.FirebaseDatabase
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -42,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+
         setupNavigation()
         checkNotificationPermissionAndStart()
         handleIntent(intent)
@@ -60,7 +61,7 @@ class MainActivity : AppCompatActivity() {
     
     override fun onStop() {
         super.onStop()
-        // alertsNotifier.stopCollection()  // Disabled - no alert notifications
+        alertsNotifier.stopCollection()
         moltingNotifier.stopCollection()
     }
     
@@ -86,10 +87,10 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun startNotifiers() {
-        // Alert notifications disabled - alerts are shown in dedicated alerts page
-        // lifecycleScope.launch {
-        //     alertsNotifier.startCollection(lifecycleScope)
-        // }
+        // Start alert notifications for water parameter monitoring
+        lifecycleScope.launch {
+            alertsNotifier.startCollection(lifecycleScope)
+        }
         lifecycleScope.launch {
             moltingNotifier.startCollection(lifecycleScope)
         }

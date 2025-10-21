@@ -50,6 +50,20 @@ object ThresholdPreferences {
             warningMax = 90.0,
             criticalMin = 50.0,
             criticalMax = 100.0
+        ),
+        SensorType.TDS to Threshold(
+            sensorType = SensorType.TDS,
+            warningMin = 13000.0,
+            warningMax = 27000.0,
+            criticalMin = 10000.0,
+            criticalMax = 30000.0
+        ),
+        SensorType.TURBIDITY to Threshold(
+            sensorType = SensorType.TURBIDITY,
+            warningMin = null,
+            warningMax = 40.0,
+            criticalMin = null,
+            criticalMax = 50.0
         )
     )
     

@@ -74,11 +74,13 @@ class FirebaseTelemetrySource @Inject constructor() : TelemetrySource {
                 tankId = tankId,
                 timestampMs = timestamp,
                 pH = (data["pH"] as? Number)?.toDouble() ?: return null,
-                dissolvedOxygenMgL = (data["dissolvedOxygenMgL"] as? Number)?.toDouble() ?: return null,
+                dissolvedOxygenMgL = (data["dissolvedOxygenMgL"] as? Number)?.toDouble(),
                 salinityPpt = (data["salinityPpt"] as? Number)?.toDouble() ?: return null,
-                ammoniaMgL = (data["ammoniaMgL"] as? Number)?.toDouble() ?: return null,
+                ammoniaMgL = (data["ammoniaMgL"] as? Number)?.toDouble(),
                 temperatureC = (data["temperatureC"] as? Number)?.toDouble() ?: return null,
-                waterLevelCm = (data["waterLevelCm"] as? Number)?.toDouble() ?: return null
+                waterLevelCm = (data["waterLevelCm"] as? Number)?.toDouble(),
+                tdsPpm = (data["tdsPpm"] as? Number)?.toDouble(),
+                turbidityNTU = (data["turbidityNTU"] as? Number)?.toDouble()
             )
         } catch (e: Exception) {
             null

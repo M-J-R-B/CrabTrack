@@ -89,15 +89,19 @@ class EvaluateMoltRiskUseCase @Inject constructor() {
         val isCriticalPhase = state == MoltState.ECDYSIS || state == MoltState.POSTMOLT_RISK
         
         var waterRisk = AlertSeverity.INFO
-        
+
         // Dissolved Oxygen - critical during molting
-        if (waterReading.dissolvedOxygenMgL < 5.0) {
-            waterRisk = if (isCriticalPhase) AlertSeverity.CRITICAL else AlertSeverity.WARNING
+        waterReading.dissolvedOxygenMgL?.let { dissolvedOxygen ->
+            if (dissolvedOxygen < 5.0) {
+                waterRisk = if (isCriticalPhase) AlertSeverity.CRITICAL else AlertSeverity.WARNING
+            }
         }
-        
+
         // Ammonia - toxic during vulnerable phases
-        if (waterReading.ammoniaMgL > 0.1) {
-            waterRisk = if (isCriticalPhase) AlertSeverity.CRITICAL else AlertSeverity.WARNING
+        waterReading.ammoniaMgL?.let { ammonia ->
+            if (ammonia > 0.1) {
+                waterRisk = if (isCriticalPhase) AlertSeverity.CRITICAL else AlertSeverity.WARNING
+            }
         }
         
         // pH - important for shell hardening
