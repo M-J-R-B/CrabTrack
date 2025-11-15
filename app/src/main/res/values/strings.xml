@@ -10,7 +10,7 @@
     <!-- Dashboard -->
     <string name="dashboard_title">Sensor Dashboard</string>
     <string name="refresh_data">Pull to refresh</string>
-    <string name="alert_indicator">Alert Status</string>
+    <string name="alert_indicator">Current Status</string>
 
     <!-- Sensor Types -->
     <string name="sensor_ph">pH</string>

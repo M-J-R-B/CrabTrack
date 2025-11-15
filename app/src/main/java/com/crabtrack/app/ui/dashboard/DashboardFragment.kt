@@ -5,11 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.crabtrack.app.databinding.FragmentDashboardNewBinding
+import com.crabtrack.app.databinding.FragmentDashboardBinding
 
 class DashboardFragment : Fragment() {
 
-    private var _binding: FragmentDashboardNewBinding? = null
+    private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -17,14 +17,14 @@ class DashboardFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentDashboardNewBinding.inflate(inflater, container, false)
+        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        binding.textDashboard.text = "Dashboard - No business logic yet"
+
+        // Dashboard layout ready - business logic can be added here
     }
 
     override fun onDestroyView() {

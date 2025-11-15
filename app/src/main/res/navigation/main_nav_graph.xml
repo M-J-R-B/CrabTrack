@@ -20,11 +20,6 @@
         android:label="Settings" />
 
     <fragment
-        android:id="@+id/moltingFragment"
-        android:name="com.crabtrack.app.ui.molting.MoltingFragment"
-        android:label="Molting" />
-
-    <fragment
         android:id="@+id/cameraFragment"
         android:name="com.crabtrack.app.ui.camera.CameraFragment"
         android:label="Camera" />

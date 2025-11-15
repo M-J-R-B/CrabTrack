@@ -29,7 +29,7 @@ sealed class AlertEvent {
 data class DashboardUiState(
     val latestReading: WaterReading? = null,
     val overallSeverity: AlertSeverity = AlertSeverity.INFO,
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -58,16 +58,22 @@ class DashboardViewModel @Inject constructor(
     private var currentThresholds: Thresholds? = null
 
     private fun startTelemetryCollection() {
+        android.util.Log.i("DashboardViewModel", "=== STARTING TELEMETRY COLLECTION ===")
         viewModelScope.launch {
+            android.util.Log.i("DashboardViewModel", "Collecting from telemetryRepository.readingsWithAlerts")
             // Use the new repository flow directly
             telemetryRepository.readingsWithAlerts
                 .catch { exception ->
+                    android.util.Log.e("DashboardViewModel", "✗ Error in telemetry flow: ${exception.message}", exception)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = "Failed to load telemetry data: ${exception.message}"
                     )
                 }
                 .collect { (reading, alerts) ->
+                    android.util.Log.i("DashboardViewModel", "=== RECEIVED READING ===")
+                    android.util.Log.i("DashboardViewModel", "Reading: pH=${reading.pH}, temp=${reading.temperatureC}°C, alerts=${alerts.size}")
+
                     val severity = alerts.maxByOrNull { it.severity.ordinal }?.severity ?: AlertSeverity.INFO
                     _uiState.value = DashboardUiState(
                         latestReading = reading,
@@ -75,7 +81,9 @@ class DashboardViewModel @Inject constructor(
                         isLoading = false,
                         errorMessage = null
                     )
-                    
+
+                    android.util.Log.i("DashboardViewModel", "✓ UI state updated with reading")
+
                     // Handle critical alerts
                     val criticalAlerts = alerts.filter { it.severity == AlertSeverity.CRITICAL }
                     if (criticalAlerts.isNotEmpty()) {
@@ -86,7 +94,9 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun refreshData() {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        // Don't set loading state - the stream is already running
+        // Just clear any error messages
+        _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 
     fun clearError() {
@@ -94,10 +104,13 @@ class DashboardViewModel @Inject constructor(
     }
 
     init {
+        android.util.Log.i("DashboardViewModel", "=== DASHBOARD VIEWMODEL INITIALIZED ===")
         startTelemetryCollection()
         // Keep track of current thresholds for parameter evaluation
         viewModelScope.launch {
+            android.util.Log.i("DashboardViewModel", "Collecting thresholds flow")
             thresholdsFlow.collect { thresholds ->
+                android.util.Log.d("DashboardViewModel", "Thresholds received: pH=${thresholds.pHMin}-${thresholds.pHMax}")
                 currentThresholds = thresholds
             }
         }

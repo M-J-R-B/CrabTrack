@@ -1,6 +1,7 @@
 package com.crabtrack.app.ui.login
 
 import android.os.Bundle
+import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -46,26 +47,85 @@ class RegisterFragment : Fragment() {
         binding.buttonSignUp.setOnClickListener {
             val username = binding.editTextUsername.text.toString().trim()
             val email = binding.textInputEmail.editText?.text.toString().trim()
-            val password = binding.editTextPassword.text.toString().trim()
+            val password = binding.textInputPassword.editText?.text.toString().trim()
+            val confirmPassword = binding.textInputConfirmpassword.editText?.text.toString().trim()
 
-            if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            // ✅ Reset previous errors
+            binding.textInputEmail.isErrorEnabled = false
+            binding.textInputPassword.isErrorEnabled = false
+            binding.textInputConfirmpassword.isErrorEnabled = false
+            // Hide all error messages first
+            binding.textPasswordError.visibility = View.GONE
+            binding.textConfirmPasswordError.visibility = View.GONE
+
+// Password length check
+            if (password.length < 6) {
+                binding.textPasswordError.text = "Password must be at least 6 characters long"
+                binding.textPasswordError.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+// Password confirmation check
+            if (password != confirmPassword) {
+                binding.textConfirmPasswordError.text = "Passwords do not match"
+                binding.textConfirmPasswordError.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+
+            // ✅ Empty field validation
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
                 Toast.makeText(requireContext(), "Please fill in all fields", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Step 1: Check if username already exists in database
+            // ✅ Email format validation
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                binding.textInputEmail.apply {
+                    isErrorEnabled = true
+                    error = "Please enter a valid email address"
+                }
+                return@setOnClickListener
+            }
+
+            // ✅ Gmail-only restriction
+            val domain = email.substringAfterLast("@")
+            if (!domain.equals("gmail.com", ignoreCase = true)) {
+                binding.textInputEmail.apply {
+                    isErrorEnabled = true
+                    error = "Only Gmail addresses are allowed"
+                }
+                return@setOnClickListener
+            }
+
+            // ✅ Password confirmation check
+            if (password != confirmPassword) {
+                binding.textInputConfirmpassword.apply {
+                    isErrorEnabled = true
+                    error = "Passwords do not match"
+                }
+                return@setOnClickListener
+            }
+
+            // ✅ Minimum password length check (Firebase requires 6+)
+            if (password.length < 6) {
+                binding.textInputPassword.apply {
+                    isErrorEnabled = true
+                    error = "Password must be at least 6 characters long"
+                }
+                return@setOnClickListener
+            }
+
+            // ✅ Continue only if all validations pass
             database.orderByChild("username").equalTo(username)
                 .addListenerForSingleValueEvent(object : ValueEventListener {
                     override fun onDataChange(snapshot: DataSnapshot) {
                         if (snapshot.exists()) {
                             Toast.makeText(requireContext(), "Username already exists!", Toast.LENGTH_SHORT).show()
                         } else {
-                            // Step 2: Create Firebase Auth account
                             auth.createUserWithEmailAndPassword(email, password)
                                 .addOnSuccessListener { authResult ->
                                     val userId = authResult.user?.uid ?: return@addOnSuccessListener
-
-                                    // Step 3: Save user info to Realtime Database
                                     val user = User(userId, username, email, password)
                                     database.child(userId).setValue(user)
                                         .addOnSuccessListener {

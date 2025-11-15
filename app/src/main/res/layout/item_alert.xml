@@ -1,78 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView 
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/card_alert"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginStart="4dp"
+    android:layout_marginEnd="4dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="18dp">
 
+        <!-- Severity Badge -->
         <TextView
             android:id="@+id/text_severity_badge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:background="@drawable/severity_badge_background"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="@color/white"
-            android:textSize="10sp"
             android:textStyle="bold"
+            android:letterSpacing="0.05"
+            android:elevation="1dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="WARNING" />
+            tools:text="WARNING"
+            tools:backgroundTint="@color/warning_text" />
 
+        <!-- Timestamp -->
         <TextView
             android:id="@+id/text_alert_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="@color/text_secondary"
-            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Aug 25, 14:30" />
 
+        <!-- Parameter Name -->
         <TextView
             android:id="@+id/text_alert_parameter"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
             android:textColor="@color/text_primary"
-            android:textSize="16sp"
             android:textStyle="bold"
+            android:letterSpacing="0.01"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_severity_badge"
-            tools:text="pH" />
+            tools:text="pH Level" />
 
+        <!-- Alert Message -->
         <TextView
             android:id="@+id/text_alert_message"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="@color/text_primary"
-            android:textSize="14sp"
+            android:lineSpacingExtra="2dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_alert_parameter"
             tools:text="pH level (7.2) is below minimum threshold (7.5)" />
 
+        <!-- Divider -->
+        <View
+            android:id="@+id/divider"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:background="@color/divider"
+            android:alpha="0.5"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_alert_message" />
+
+        <!-- Tank ID -->
         <TextView
             android:id="@+id/text_alert_tank"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="@color/text_secondary"
-            android:textSize="12sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_alert_message"
+            app:layout_constraintTop_toBottomOf="@+id/divider"
             tools:text="Tank: tank_001" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

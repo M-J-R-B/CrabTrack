@@ -121,8 +121,8 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         
-        if (navController.currentDestination?.id != R.id.moltingFragment) {
-            navController.navigate(R.id.moltingFragment)
+        if (navController.currentDestination?.id != R.id.cameraFragment) {
+            navController.navigate(R.id.cameraFragment)
         }
     }
 }

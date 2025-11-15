@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew.bat:*)"
+      "Bash(./gradlew.bat:*)",
+      "Bash(dir gradlew.bat)",
+      "Bash(powershell -Command \"& ''.\\gradlew.bat'' --version\")",
+      "Bash(powershell -Command \"& ''.\\gradlew.bat'' clean build --stacktrace\")",
+      "Bash(powershell -Command \"& ''.\\gradlew.bat'' assembleDebug --stacktrace\")",
+      "Bash(powershell -Command \"& ''.\\gradlew.bat'' assembleDebug\")",
+      "Bash(powershell -Command \"& ''.\\gradlew.bat'' test --stacktrace\")",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

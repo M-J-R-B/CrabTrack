@@ -14,30 +14,129 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Water Quality Section Header -->
-        <TextView
-            android:id="@+id/text_settings_title"
+        <!-- Profile Header -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/profile_header_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true"
+            android:backgroundTint="@color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
+
+                <!-- Profile Picture -->
+                <ImageView
+                    android:id="@+id/image_profile"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/profile_circle"
+                    android:scaleType="centerCrop"
+                    android:layout_marginEnd="16dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- User Info -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/text_profile_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="John Doe"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/text_profile_email"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="johndoe@gmail.com"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/text_profile_role"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Farmer"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="@color/secondary" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/button_edit_profile"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginStart="76dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_edit"
+                    android:contentDescription="Edit Profile"
+                    android:layout_gravity="end|center_vertical"
+                    app:tint="@color/black" />
+
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Water Quality Thresholds Clickable Header -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/water_quality_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="Water Quality Thresholds"
-            android:textColor="@color/white"
-            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-            android:textStyle="bold" />
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:layout_marginBottom="16dp"
-            android:background="@color/white" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
 
-        <!-- PARENT CARDVIEW (container for all MaterialCardViews) -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Water Quality Thresholds"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/water_quality_expand_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    android:contentDescription="Expand/Collapse" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Water Quality Content -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/water_quality_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
+            android:visibility="gone"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true">
@@ -54,8 +153,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp"
-                    app:cardCornerRadius="12dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -84,16 +183,15 @@
                                 android:layout_marginEnd="8dp"
                                 android:layout_weight="1"
                                 android:hint="Minimum"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 7.0"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/ph_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -104,16 +202,15 @@
                                 android:layout_marginStart="8dp"
                                 android:layout_weight="1"
                                 android:hint="Maximum"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 8.5"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/ph_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -124,8 +221,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp"
-                    app:cardCornerRadius="12dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -154,16 +251,15 @@
                                 android:layout_marginEnd="8dp"
                                 android:layout_weight="1"
                                 android:hint="Minimum (ppt)"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 25"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/salinity_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -174,16 +270,15 @@
                                 android:layout_marginStart="8dp"
                                 android:layout_weight="1"
                                 android:hint="Maximum (ppt)"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 35"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/salinity_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -194,8 +289,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp"
-                    app:cardCornerRadius="12dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -224,16 +319,15 @@
                                 android:layout_marginEnd="8dp"
                                 android:layout_weight="1"
                                 android:hint="Minimum (°C)"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 22"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/temp_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -244,16 +338,15 @@
                                 android:layout_marginStart="8dp"
                                 android:layout_weight="1"
                                 android:hint="Maximum (°C)"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 28"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/temp_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -264,8 +357,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp"
-                    app:cardCornerRadius="12dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -294,16 +387,15 @@
                                 android:layout_marginEnd="8dp"
                                 android:layout_weight="1"
                                 android:hint="Minimum (ppm)"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 100"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/tds_min_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -314,16 +406,15 @@
                                 android:layout_marginStart="8dp"
                                 android:layout_weight="1"
                                 android:hint="Maximum (ppm)"
+                                app:boxStrokeColor="@color/blu"
                                 app:helperText="e.g., 500"
-                                app:helperTextTextColor="@color/text_secondary"
-                                app:boxStrokeColor="@color/blu">
+                                app:helperTextTextColor="@color/text_secondary">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/tds_max_input"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textSize="16sp" />
+                                    android:inputType="numberDecimal" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -334,8 +425,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardElevation="2dp"
-                    app:cardCornerRadius="12dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -357,16 +448,15 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="Maximum (NTU)"
+                            app:boxStrokeColor="@color/blu"
                             app:helperText="e.g., 5.0"
-                            app:helperTextTextColor="@color/text_secondary"
-                            app:boxStrokeColor="@color/blu">
+                            app:helperTextTextColor="@color/text_secondary">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/turbidity_max_input"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="numberDecimal"
-                                android:textSize="16sp" />
+                                android:inputType="numberDecimal" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -376,8 +466,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:orientation="horizontal"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_reset_defaults"
@@ -387,7 +477,6 @@
                         android:layout_marginEnd="12dp"
                         android:layout_weight="1"
                         android:text="Reset to Defaults"
-                        android:textSize="15sp"
                         app:strokeColor="@color/blu"
                         app:strokeWidth="2dp" />
 
@@ -399,7 +488,6 @@
                         android:layout_weight="1"
                         android:backgroundTint="@color/blu"
                         android:text="Save Settings"
-                        android:textSize="15sp"
                         app:cornerRadius="8dp" />
                 </LinearLayout>
 
@@ -415,28 +503,52 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Dispenser Section Header -->
-        <TextView
+        <!-- Dispenser Clickable Header -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/dispenser_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="Dispenser"
-            android:textColor="@color/white"
-            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-            android:textStyle="bold" />
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:layout_marginBottom="16dp"
-            android:background="@color/white" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
 
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Dispenser"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/dispenser_expand_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    android:contentDescription="Expand/Collapse" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Dispenser Content -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/dispenser_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
+            android:visibility="gone"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true">
@@ -485,8 +597,7 @@
                                 android:id="@+id/ml_ph"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="numberDecimal"
-                                android:textSize="16sp"/>
+                                android:inputType="numberDecimal"/>
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.button.MaterialButton
@@ -497,7 +608,6 @@
                             android:backgroundTint="@color/blu"
                             android:layout_marginTop="8dp"
                             android:text="Dispense Solution"
-                            android:textSize="15sp"
                             app:cornerRadius="8dp"
                             app:icon="@android:drawable/ic_menu_rotate"
                             app:iconGravity="textStart" />
@@ -507,29 +617,52 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Feeding Reminder Section Header -->
-        <TextView
+        <!-- Feeding Reminder Clickable Header -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/feeding_reminder_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="Feeding Reminder"
-            android:textColor="@color/white"
-            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-            android:textStyle="bold" />
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:layout_marginBottom="16dp"
-            android:background="@color/white" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
 
-        <!-- Feeding Reminder Section -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Feeding Reminder"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/feeding_reminder_expand_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    android:contentDescription="Expand/Collapse" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Feeding Reminder Content -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/feeding_reminder_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
+            android:visibility="gone"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true">
@@ -579,8 +712,7 @@
                                 android:layout_height="wrap_content"
                                 android:focusable="false"
                                 android:clickable="true"
-                                android:inputType="none"
-                                android:textSize="16sp" />
+                                android:inputType="none" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Time Picker -->
@@ -602,9 +734,47 @@
                                 android:layout_height="wrap_content"
                                 android:focusable="false"
                                 android:clickable="true"
-                                android:inputType="none"
-                                android:textSize="16sp" />
+                                android:inputType="none" />
                         </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Recurrence Selection -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Repeat"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:textColor="@color/text_primary" />
+
+                        <RadioGroup
+                            android:id="@+id/recurrence_radio_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radio_one_time"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="One-time"
+                                android:checked="true" />
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radio_daily"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Daily" />
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radio_weekly"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Weekly" />
+                        </RadioGroup>
 
                         <!-- Set Reminder Button -->
                         <com.google.android.material.button.MaterialButton
@@ -615,16 +785,329 @@
                             android:layout_gravity="center_horizontal"
                             android:backgroundTint="@color/blu"
                             android:text="Set Feeding Reminder"
-                            android:textSize="15sp"
                             app:cornerRadius="8dp"
                             app:icon="@android:drawable/ic_menu_my_calendar"
                             app:iconGravity="textStart" />
+
+                        <!-- Scheduled Reminders Section -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="24dp"
+                            android:text="Scheduled Reminders"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold" />
+
+                        <!-- RecyclerView for Reminders List -->
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/reminders_recycler_view"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:nestedScrollingEnabled="false" />
+
+                        <!-- Empty State Message -->
+                        <TextView
+                            android:id="@+id/empty_reminders_message"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="No reminders scheduled"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:textColor="@color/text_secondary"
+                            android:gravity="center"
+                            android:visibility="gone" />
 
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Advanced Settings Clickable Header -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/advanced_settings_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Data Usage &amp; Network"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/advanced_settings_expand_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    android:contentDescription="Expand/Collapse" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Collapsible Data Usage & Network Section -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/advanced_settings_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Network Status -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#E3F2FD">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Network Type:"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/text_network_type"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="WiFi"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/primary"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Data Saver Toggle -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Data Saver Mode"
+                                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                                android:textColor="@color/text_primary" />
+
+                            <com.google.android.material.materialswitch.MaterialSwitch
+                                android:id="@+id/switch_data_saver"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Reduces camera quality, increases MQTT intervals, and minimizes background sync"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Daily Data Limit -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Daily Data Limit (MB)"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginBottom="8dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/daily_limit_input_layout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Daily Limit"
+                            app:boxStrokeColor="@color/blu"
+                            app:helperText="e.g., 200 for 200 MB/day"
+                            app:helperTextTextColor="@color/text_secondary">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/daily_limit_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:text="200" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_set_limit"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="8dp"
+                            android:text="Set Limit"
+                            app:cornerRadius="8dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Current Data Usage -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Current Usage"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginBottom="16dp" />
+
+                        <!-- Today's Usage -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Today:"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                android:id="@+id/text_today_usage"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.0 MB"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="@color/primary"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- This Month's Usage -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="This Month:"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                android:id="@+id/text_month_usage"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.0 MB"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="@color/primary"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Session Usage -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="This Session:"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                android:id="@+id/text_session_usage"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.0 MB"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="@color/primary"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/button_Logout"
@@ -636,7 +1119,6 @@
             android:layout_marginTop="24dp"
             android:layout_marginBottom="16dp"
             android:text="Logout"
-            android:textSize="15sp"
             app:cornerRadius="8dp"
             app:icon="@android:drawable/ic_lock_power_off"
             app:iconGravity="textStart" />

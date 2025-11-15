@@ -5,9 +5,12 @@ import android.util.Log
 import com.crabtrack.app.data.model.WaterReading
 import com.crabtrack.app.data.source.TelemetrySource
 import com.crabtrack.app.data.source.TelemetrySourceConfig
+import com.crabtrack.app.data.util.NetworkTypeDetector
+import com.crabtrack.app.data.util.DataUsageTracker
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import info.mqtt.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 import org.json.JSONObject
@@ -16,6 +19,9 @@ import javax.inject.Inject
 /**
  * MQTT-based telemetry source that subscribes to an MQTT broker
  * and emits WaterReading objects from received messages.
+ *
+ * This source automatically optimizes MQTT connection parameters based on
+ * the current network type (WiFi vs Mobile Data) and data saver mode status.
  *
  * Expected JSON payload format from ESP32:
  * {
@@ -28,7 +34,8 @@ import javax.inject.Inject
  */
 class MqttTelemetrySource @Inject constructor(
     private val context: Context,
-    private val mqttConfig: MqttConfig = MqttConfig()
+    private val networkTypeDetector: NetworkTypeDetector,
+    private val dataUsageTracker: DataUsageTracker
 ) : TelemetrySource {
 
     companion object {
@@ -36,16 +43,25 @@ class MqttTelemetrySource @Inject constructor(
     }
 
     override fun stream(config: TelemetrySourceConfig): Flow<WaterReading> = callbackFlow {
+        // Get network-optimized MQTT configuration
+        val isWiFi = networkTypeDetector.isOnWiFi()
+        val dataSaverEnabled = dataUsageTracker.isDataSaverEnabled().first()
+        val mqttConfig = MqttConfig.forNetworkType(isWiFi, dataSaverEnabled)
+
+        Log.i(TAG, "Initializing MQTT with config: WiFi=$isWiFi, DataSaver=$dataSaverEnabled")
+        Log.i(TAG, "MQTT settings: keepAlive=${mqttConfig.keepAliveInterval}s, QoS=${mqttConfig.qos}")
+
         val client = MqttAndroidClient(context, mqttConfig.brokerUrl, mqttConfig.clientId)
 
-        // Configure connection options
+        // Configure connection options with network-optimized parameters
         val connectOptions = MqttConnectOptions().apply {
             userName = mqttConfig.username
             password = mqttConfig.password.toCharArray()
-            isCleanSession = true
+            isCleanSession = mqttConfig.cleanSession
             connectionTimeout = mqttConfig.connectionTimeout
             keepAliveInterval = mqttConfig.keepAliveInterval
             isAutomaticReconnect = mqttConfig.autoReconnect
+            maxReconnectDelay = mqttConfig.maxReconnectDelay
         }
 
         // Set up callbacks
@@ -79,8 +95,8 @@ class MqttTelemetrySource @Inject constructor(
 
         // Connect to broker
         try {
-            Log.i(TAG, "Connecting to MQTT broker: ${mqttConfig.brokerUrl}")
-            Log.i(TAG, "Using mobile data - ensure broker is accessible from internet")
+            val networkType = if (isWiFi) "WiFi" else "Mobile Data"
+            Log.i(TAG, "Connecting to MQTT broker: ${mqttConfig.brokerUrl} via $networkType")
 
             client.connect(connectOptions, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {

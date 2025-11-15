@@ -19,7 +19,7 @@
         <!-- Video Surface Container -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="220dp"
             android:background="@color/black">
 
             <!-- Video View -->
@@ -69,36 +69,39 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Stream Controls Overlay -->
-            <LinearLayout
-                android:id="@+id/controlsOverlay"
+            <!-- Quality Badge (Top Right) -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/qualityBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@drawable/rounded_background_semi_transparent"
-                android:padding="8dp"
-                android:layout_margin="12dp"
-                android:visibility="gone"
+                android:text="MQ"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textColor="@color/white"
+                android:layout_margin="8dp"
+                app:chipBackgroundColor="#99000000"
+                app:chipStrokeWidth="0dp"
+                app:chipMinHeight="24dp"
+                app:chipIconSize="14dp"
+                app:chipIcon="@drawable/ic_network"
+                app:chipIconTint="@color/white"
+                style="@style/Widget.Material3.Chip.Assist"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/snapshotButton"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:insetLeft="0dp"
-                    android:insetRight="0dp"
-                    app:icon="@drawable/ic_camera"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:iconSize="18dp"
-                    app:iconTint="@color/white"
-                    android:backgroundTint="@color/primary"
-                    style="@style/Widget.Material3.Button.Icon" />
-
-            </LinearLayout>
+            <!-- Snapshot FAB (Floating over video) -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/snapshotFab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_camera"
+                android:contentDescription="@string/take_snapshot"
+                android:visibility="gone"
+                app:fabSize="mini"
+                app:tint="@color/white"
+                app:backgroundTint="@color/primary"
+                android:layout_margin="12dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <!-- Live Indicator -->
             <TextView
@@ -106,25 +109,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/live"
-                android:textSize="12sp"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="@color/white"
                 android:textStyle="bold"
                 android:background="@drawable/live_indicator_background"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="4dp"
-                android:layout_margin="12dp"
+                android:layout_margin="8dp"
                 android:visibility="gone"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Stream Info -->
+        <!-- Stream Info & Control Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
             <!-- Stream Name and Status -->
             <LinearLayout
@@ -148,59 +151,65 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/stream_offline"
-                    android:textSize="12sp"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    app:chipMinHeight="28dp"
                     style="@style/Widget.Material3.Chip.Assist" />
 
             </LinearLayout>
 
-            <!-- Stream Metrics -->
+            <!-- Consolidated Control Bar -->
             <LinearLayout
-                android:id="@+id/metricsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:visibility="gone"
-                android:layout_marginBottom="12dp">
+                android:gravity="center_vertical"
+                android:background="?attr/colorSurfaceVariant"
+                android:padding="8dp"
+                android:layout_marginTop="4dp">
 
-                <TextView
-                    android:id="@+id/qualityText"
+                <!-- Stream Metrics (visible when active) -->
+                <LinearLayout
+                    android:id="@+id/metricsLayout"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="720p • 30fps" />
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    android:gravity="start|center_vertical">
 
-                <TextView
-                    android:id="@+id/latencyText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="120ms" />
+                    <TextView
+                        android:id="@+id/qualityText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginEnd="12dp"
+                        tools:text="720p • 30fps" />
 
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/latencyText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="120ms" />
 
-            <!-- Action Buttons -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="end">
+                </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/qualityButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/quality"
-                    android:layout_marginEnd="8dp"
-                    style="@style/Widget.Material3.Button.TextButton" />
+                <!-- Spacer when metrics hidden -->
+                <View
+                    android:id="@+id/metricsSpacer"
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
 
+                <!-- Play/Pause Toggle Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/playPauseButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/stream_play"
+                    android:minWidth="96dp"
                     style="@style/Widget.Material3.Button" />
 
             </LinearLayout>

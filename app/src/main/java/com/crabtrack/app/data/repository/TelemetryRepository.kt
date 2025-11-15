@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 import javax.inject.Singleton
 
 @Singleton
@@ -24,14 +25,33 @@ class TelemetryRepository(
     private val applicationScope: CoroutineScope,
     private val thresholdsStore: ThresholdsStore
 ) {
-    
+
     // Shared readings flow with proper lifecycle management
+    // Using Eagerly to start Firebase listener immediately
+    // IMPORTANT: Declared before init block so it's initialized first
     val readings = telemetrySource.stream(TelemetrySourceConfig())
         .shareIn(
             scope = applicationScope,
-            started = SharingStarted.Lazily,
+            started = SharingStarted.Eagerly,
             replay = 1
         )
+
+    init {
+        android.util.Log.i("TelemetryRepository", "=== TELEMETRY REPOSITORY CREATED ===")
+        android.util.Log.i("TelemetryRepository", "Telemetry source: ${telemetrySource::class.simpleName}")
+
+        // Force the readings flow to start immediately by accessing it
+        // This is critical because Kotlin property initialization is lazy,
+        // so even with SharingStarted.Eagerly, the flow won't start until accessed
+        android.util.Log.i("TelemetryRepository", "Forcing readings flow initialization...")
+        applicationScope.launch {
+            android.util.Log.i("TelemetryRepository", "Accessing readings flow to trigger Firebase stream")
+            readings.collect { reading ->
+                android.util.Log.d("TelemetryRepository", "Reading received in init collector: pH=${reading.pH}")
+            }
+        }
+        android.util.Log.i("TelemetryRepository", "Readings flow collector launched")
+    }
     
     // Live threshold-aware alerts flow
     val alerts: Flow<Alert> = combine(
@@ -42,10 +62,10 @@ class TelemetryRepository(
     }.mapNotNull { it }
         .shareIn(
             scope = applicationScope,
-            started = SharingStarted.Lazily,
+            started = SharingStarted.Eagerly,
             replay = 1
         )
-    
+
     // Live threshold-aware all alerts flow
     val allAlerts: Flow<List<Alert>> = combine(
         readings,
@@ -58,20 +78,21 @@ class TelemetryRepository(
         }
     }.shareIn(
         scope = applicationScope,
-        started = SharingStarted.Lazily,
+        started = SharingStarted.Eagerly,
         replay = 1
     )
-    
+
     // Live threshold-aware readings with alerts flow
     val readingsWithAlerts: Flow<Pair<WaterReading, List<Alert>>> = combine(
         readings,
         thresholdsStore.thresholds
     ) { reading, thresholds ->
+        android.util.Log.d("TelemetryRepository", "Combining reading (pH=${reading.pH}) with thresholds")
         val alerts = evaluateThresholdsUseCase.evaluateAll(reading, thresholds)
         reading to alerts
     }.shareIn(
         scope = applicationScope,
-        started = SharingStarted.Lazily,
+        started = SharingStarted.Eagerly,
         replay = 1
     )
     

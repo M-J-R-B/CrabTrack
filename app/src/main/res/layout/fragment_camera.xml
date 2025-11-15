@@ -6,93 +6,101 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/blu"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="8dp"
     tools:context=".ui.camera.CameraFragment">
 
-    <!-- FULL SCREEN CARD -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/camera_container_card"
+    <!-- Title -->
+    <TextView
+        android:id="@+id/titleText"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardUseCompatPadding="true">
+        android:layout_height="wrap_content"
+        android:text="@string/camera_title"
+        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
 
-        <!-- Inner container -->
+    <!-- Tank Selector Chips -->
+    <HorizontalScrollView
+        android:id="@+id/tankScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginBottom="16dp"
+        android:paddingHorizontal="0dp">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/tankChipGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:chipSpacingHorizontal="8dp">
+
+            <!-- Chips added dynamically in CameraFragment -->
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <!-- Recycler + overlays (use FrameLayout for overlay behavior) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Streams RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/streamsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp"
+            tools:listitem="@layout/item_camera_stream" />
+
+        <!-- Empty State (overlays RecyclerView) -->
         <LinearLayout
+            android:id="@+id/emptyStateLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:gravity="center"
+            android:visibility="gone"
+            android:padding="32dp">
 
-            <!-- Title -->
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_camera"
+                android:alpha="0.6"
+                android:layout_marginBottom="16dp" />
+
             <TextView
-                android:id="@+id/titleText"
-                android:layout_width="match_parent"
+                android:id="@+id/emptyStateText"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/camera_title"
-                android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Tab Layout for different tanks -->
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/tankTabLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                app:tabMode="scrollable" />
-
-            <!-- Recycler + overlays (use FrameLayout for overlay behavior) -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
-
-                <!-- Streams RecyclerView -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/streamsRecyclerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false"
-                    android:padding="8dp"
-                    tools:listitem="@layout/item_camera_stream" />
-
-                <!-- Empty State (overlays RecyclerView) -->
-                <LinearLayout
-                    android:id="@+id/emptyStateLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:visibility="gone"
-                    android:padding="32dp">
-
-                    <ImageView
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:src="@drawable/ic_camera"
-                        android:alpha="0.6"
-                        android:layout_marginBottom="16dp" />
-
-                    <TextView
-                        android:id="@+id/emptyStateText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/no_camera_streams"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:gravity="center" />
-                </LinearLayout>
-
-                <!-- Loading Indicator (also overlays RecyclerView) -->
-                <ProgressBar
-                    android:id="@+id/loadingIndicator"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
-            </FrameLayout>
-
+                android:text="@string/no_camera_streams"
+                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textStyle="bold"
+                android:gravity="center" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+
+        <!-- Loading Indicator (also overlays RecyclerView) -->
+        <ProgressBar
+            android:id="@+id/loadingIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <!-- Molt Monitoring Card -->
+    <include
+        android:id="@+id/moltMonitoringCardInclude"
+        layout="@layout/layout_molt_monitoring_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
 </LinearLayout>

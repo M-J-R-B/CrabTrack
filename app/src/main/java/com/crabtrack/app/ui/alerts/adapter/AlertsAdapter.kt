@@ -44,27 +44,24 @@ class AlertsAdapter : ListAdapter<Alert, AlertsAdapter.AlertViewHolder>(AlertDif
                             ContextCompat.getColor(root.context, R.color.normal_background)
                         )
                         textSeverityBadge.text = "INFO"
-                        textSeverityBadge.setBackgroundColor(
-                            ContextCompat.getColor(root.context, R.color.normal_text)
-                        )
+                        textSeverityBadge.backgroundTintList =
+                            ContextCompat.getColorStateList(root.context, R.color.normal_text)
                     }
                     AlertSeverity.WARNING -> {
                         cardAlert.setCardBackgroundColor(
                             ContextCompat.getColor(root.context, R.color.warning_background)
                         )
                         textSeverityBadge.text = "WARNING"
-                        textSeverityBadge.setBackgroundColor(
-                            ContextCompat.getColor(root.context, R.color.warning_text)
-                        )
+                        textSeverityBadge.backgroundTintList =
+                            ContextCompat.getColorStateList(root.context, R.color.warning_text)
                     }
                     AlertSeverity.CRITICAL -> {
                         cardAlert.setCardBackgroundColor(
                             ContextCompat.getColor(root.context, R.color.critical_background)
                         )
                         textSeverityBadge.text = "CRITICAL"
-                        textSeverityBadge.setBackgroundColor(
-                            ContextCompat.getColor(root.context, R.color.critical_text)
-                        )
+                        textSeverityBadge.backgroundTintList =
+                            ContextCompat.getColorStateList(root.context, R.color.critical_text)
                     }
                 }
             }

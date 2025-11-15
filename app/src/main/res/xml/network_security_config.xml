@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext traffic for MQTT broker to enable cellular data connectivity -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">mqtt.imbento.online</domain>
+    </domain-config>
+
+    <!-- Ensure Firebase domains are accessible (HTTPS enabled by default) -->
+    <domain-config>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <domain includeSubdomains="true">google.com</domain>
+        <domain includeSubdomains="true">gstatic.com</domain>
+    </domain-config>
+</network-security-config>

@@ -63,10 +63,11 @@ class AlertsFragment : Fragment() {
         alertsAdapter.submitList(uiState.alerts)
 
         if (uiState.alerts.isEmpty() && !uiState.isLoading) {
-            binding.emptyStateText.visibility = View.VISIBLE
-            binding.emptyStateText.text = "No alerts to display"
+            binding.emptyStateLayout.visibility = View.VISIBLE
+            binding.recyclerViewAlerts.visibility = View.GONE
         } else {
-            binding.emptyStateText.visibility = View.GONE
+            binding.emptyStateLayout.visibility = View.GONE
+            binding.recyclerViewAlerts.visibility = View.VISIBLE
         }
 
         uiState.errorMessage?.let { message ->

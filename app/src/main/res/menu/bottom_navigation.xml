@@ -15,12 +15,7 @@
         android:id="@+id/cameraFragment"
         android:icon="@drawable/ic_camera"
         android:title="@string/nav_camera" />
-    
-    <item
-        android:id="@+id/moltingFragment"
-        android:icon="@drawable/ic_molting"
-        android:title="@string/nav_molting" />
-    
+
     <item
         android:id="@+id/settingsFragment"
         android:icon="@drawable/ic_settings"

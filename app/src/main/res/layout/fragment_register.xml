@@ -70,7 +70,9 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="165dp"
             android:background="@color/white"
-            android:text="Email"></TextView>
+            android:text="Email">
+
+        </TextView>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/text_input_email"
@@ -104,7 +106,9 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="268dp"
             android:hint="Enter Password"
-            app:endIconMode="password_toggle">
+            app:endIconMode="password_toggle"
+            app:errorEnabled="true">
+
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edit_text_password"
@@ -113,6 +117,16 @@
                 android:inputType="textPassword" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <TextView
+            android:id="@+id/text_password_error"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="65dp"
+            android:layout_marginTop="418dp"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:text="Password must be at least 6 characters long" />
 
         <TextView
             android:layout_width="150dp"
@@ -130,7 +144,8 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="355dp"
             android:hint="Confirm Password"
-            app:endIconMode="password_toggle">
+            app:endIconMode="password_toggle"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
@@ -139,6 +154,18 @@
 
             </com.google.android.material.textfield.TextInputEditText>
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 🔻 This one for confirm password -->
+        <TextView
+            android:id="@+id/text_confirm_password_error"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="60dp"
+            android:layout_marginTop="418dp"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:text="Passwords do not match" />
 
         <TextView
             android:layout_width="wrap_content"

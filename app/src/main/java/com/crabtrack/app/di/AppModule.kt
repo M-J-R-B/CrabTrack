@@ -17,9 +17,11 @@ import com.crabtrack.app.data.source.molt.VisionMoltSource
 import com.crabtrack.app.data.source.camera.CameraSource
 import com.crabtrack.app.data.source.camera.MockCameraSource
 import com.crabtrack.app.data.repository.CameraRepository
-import com.crabtrack.app.data.source.remote.FirebaseTelemetrySource
+import com.crabtrack.app.data.source.firebase.FirebaseTelemetrySource
 import com.crabtrack.app.data.source.mqtt.MqttTelemetrySource
 import com.crabtrack.app.data.source.mqtt.MqttConfig
+import com.crabtrack.app.data.util.NetworkTypeDetector
+import com.crabtrack.app.data.util.DataUsageTracker
 import com.crabtrack.app.domain.usecase.ComposeMoltGuidanceUseCase
 import com.crabtrack.app.domain.usecase.EvaluateMoltRiskUseCase
 import com.crabtrack.app.domain.usecase.EvaluateThresholdsUseCase
@@ -98,9 +100,11 @@ object AppModule {
     @Provides
     @Singleton
     fun provideMqttTelemetrySource(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
+        networkTypeDetector: NetworkTypeDetector,
+        dataUsageTracker: DataUsageTracker
     ): MqttTelemetrySource {
-        return MqttTelemetrySource(context, MqttConfig())
+        return MqttTelemetrySource(context, networkTypeDetector, dataUsageTracker)
     }
 
     @Provides

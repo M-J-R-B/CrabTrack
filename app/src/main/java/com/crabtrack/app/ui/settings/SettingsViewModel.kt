@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crabtrack.app.data.local.ThresholdsStore
 import com.crabtrack.app.data.model.Thresholds
+import com.crabtrack.app.data.model.FeedingReminder
+import com.crabtrack.app.data.model.RecurrenceType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,6 +19,9 @@ import javax.inject.Inject
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.tasks.await
 
 
@@ -89,8 +94,16 @@ class SettingsViewModel @Inject constructor(
         initialValue = false
     )
 
+    // Feeding reminders management
+    private val _feedingReminders = MutableStateFlow<List<FeedingReminder>>(emptyList())
+    val feedingReminders: StateFlow<List<FeedingReminder>> = _feedingReminders.asStateFlow()
+
+    private val _reminderMessage = MutableStateFlow<String?>(null)
+    val reminderMessage: StateFlow<String?> = _reminderMessage.asStateFlow()
+
     init {
         loadThresholds()
+        loadFeedingReminders()
     }
 
     private fun loadThresholds() {
@@ -495,6 +508,65 @@ class SettingsViewModel @Inject constructor(
                 errorMessage = "Failed to load Firebase data: ${e.message}"
             )
         }
+    }
+
+    // ========== Feeding Reminders Management ==========
+
+    fun loadFeedingReminders() {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+
+        val dbRef = FirebaseDatabase.getInstance()
+            .getReference("users")
+            .child(user.uid)
+            .child("feeding_reminders")
+
+        // Changed from addValueEventListener (continuous) to addListenerForSingleValueEvent (query-on-demand)
+        // This saves data by not maintaining a persistent listener connection
+        dbRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val reminders = mutableListOf<FeedingReminder>()
+                for (child in snapshot.children) {
+                    val reminder = child.getValue(FeedingReminder::class.java)
+                    if (reminder != null) {
+                        // Add the Firebase key as the ID
+                        reminders.add(reminder.copy(id = child.key ?: ""))
+                    }
+                }
+                // Sort by timestamp (earliest first)
+                _feedingReminders.value = reminders.sortedBy { it.timestamp }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                android.util.Log.e("SettingsViewModel", "Failed to load reminders: ${error.message}")
+            }
+        })
+    }
+
+    fun deleteReminder(reminder: FeedingReminder) {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+
+        viewModelScope.launch {
+            try {
+                FirebaseDatabase.getInstance()
+                    .getReference("users")
+                    .child(user.uid)
+                    .child("feeding_reminders")
+                    .child(reminder.id)
+                    .removeValue()
+                    .await()
+
+                _reminderMessage.value = "Reminder deleted successfully"
+
+                // Reload reminders after deletion since we're using query-on-demand now
+                loadFeedingReminders()
+            } catch (e: Exception) {
+                _reminderMessage.value = "Failed to delete reminder: ${e.message}"
+            }
+        }
+    }
+
+    fun clearReminderMessage() {
+        _reminderMessage.value = null
     }
 
 }

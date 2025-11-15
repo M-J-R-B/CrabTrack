@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "856749808559",
+    "firebase_url": "https://crabtrack-f08f4-default-rtdb.firebaseio.com",
+    "project_id": "crabtrack-f08f4",
+    "storage_bucket": "crabtrack-f08f4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:856749808559:android:0612bff26aa0fedf52ed5a",
+        "android_client_info": {
+          "package_name": "com.crabtrack.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzzxeAg4VebvlqK8QVevyjVsUdwMSKHpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

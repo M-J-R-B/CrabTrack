@@ -20,7 +20,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField("String", "TELEMETRY_SOURCE", "\"MQTT\"")
+        buildConfigField("String", "TELEMETRY_SOURCE", "\"FIREBASE\"")
         buildConfigField("String", "MOLT_SOURCE", "\"MOCK\"") // Options: "MOCK", "VISION"
     }
 
@@ -133,10 +133,19 @@ dependencies {
     // LocalBroadcastManager replacement (required for MQTT library)
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
 
+    implementation("com.google.firebase:firebase-storage:21.0.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt ("com.github.bumptech.glide:compiler:4.16.0")
+
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("app.cash.turbine:turbine:1.1.0")
+    testImplementation("org.mockito:mockito-core:5.7.0")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

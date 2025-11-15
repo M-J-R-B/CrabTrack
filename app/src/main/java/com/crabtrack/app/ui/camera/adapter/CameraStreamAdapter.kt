@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,14 +15,18 @@ import com.crabtrack.app.data.model.ConnectionStatus
 import com.crabtrack.app.data.model.StreamMetrics
 import com.crabtrack.app.data.model.VideoQuality
 import com.crabtrack.app.databinding.ItemCameraStreamBinding
+import com.crabtrack.app.ui.camera.QualityBottomSheetFragment
 
 /**
  * Adapter for displaying camera streams in a RecyclerView
  */
 class CameraStreamAdapter(
+    private val fragmentManager: FragmentManager,
     private val onPlayPause: (CameraStream) -> Unit = {},
     private val onQualityChange: (CameraStream, VideoQuality) -> Unit = { _, _ -> },
-    private val onSnapshot: (CameraStream) -> Unit = {}
+    private val onSnapshot: (CameraStream) -> Unit = {},
+    private val recommendedQuality: VideoQuality? = null,
+    private val networkType: String? = null
 ) : ListAdapter<CameraStream, CameraStreamAdapter.StreamViewHolder>(StreamDiffCallback()) {
 
     private val streamMetrics = mutableMapOf<String, StreamMetrics>()
@@ -57,29 +62,49 @@ class CameraStreamAdapter(
             binding.apply {
                 // Stream name
                 streamNameText.text = stream.name
-                
+
                 // Connection status
                 updateStreamStatus(stream)
-                
+
                 // Video setup
                 setupVideoView(stream)
-                
+
                 // Metrics
                 val metrics = streamMetrics[stream.id]
                 updateStreamMetrics(stream, metrics)
-                
-                // Click handlers
-                playPauseButton.setOnClickListener { 
-                    onPlayPause(stream) 
+
+                // Update quality badge
+                qualityBadge.text = getQualityLabel(stream.quality)
+
+                // Update Play/Pause button text
+                if (stream.isActive) {
+                    playPauseButton.text = root.context.getString(R.string.stream_stop)
+                } else {
+                    playPauseButton.text = root.context.getString(R.string.stream_play)
                 }
-                
-                qualityButton.setOnClickListener { 
+
+                // Click handlers
+                playPauseButton.setOnClickListener {
+                    onPlayPause(stream)
+                }
+
+                qualityBadge.setOnClickListener {
                     showQualityDialog(stream)
                 }
-                
-                snapshotButton.setOnClickListener { 
-                    onSnapshot(stream) 
+
+                snapshotFab.setOnClickListener {
+                    onSnapshot(stream)
                 }
+            }
+        }
+
+        private fun getQualityLabel(quality: VideoQuality): String {
+            return when (quality) {
+                VideoQuality.ULTRA_LOW -> "ULQ"
+                VideoQuality.LOW -> "LQ"
+                VideoQuality.MEDIUM -> "MQ"
+                VideoQuality.HIGH -> "HQ"
+                VideoQuality.ULTRA -> "UHQ"
             }
         }
         
@@ -89,57 +114,60 @@ class CameraStreamAdapter(
                     ConnectionStatus.DISCONNECTED -> {
                         statusChip.text = root.context.getString(R.string.stream_offline)
                         statusChip.setChipBackgroundColorResource(android.R.color.darker_gray)
-                        playPauseButton.text = root.context.getString(R.string.stream_play)
-                        
+
                         // Hide overlays
                         statusOverlay.isVisible = false
                         statusText.isVisible = false
                         liveIndicator.isVisible = false
-                        controlsOverlay.isVisible = false
+                        snapshotFab.isVisible = false
+                        qualityBadge.isVisible = true
                     }
-                    
+
                     ConnectionStatus.CONNECTING -> {
                         statusChip.text = root.context.getString(R.string.stream_connecting)
                         statusChip.setChipBackgroundColorResource(android.R.color.holo_orange_light)
-                        
+
                         statusOverlay.isVisible = true
                         statusText.isVisible = true
                         statusText.text = root.context.getString(R.string.stream_connecting)
                         liveIndicator.isVisible = false
-                        controlsOverlay.isVisible = false
+                        snapshotFab.isVisible = false
+                        qualityBadge.isVisible = true
                     }
-                    
+
                     ConnectionStatus.BUFFERING -> {
                         statusChip.text = root.context.getString(R.string.stream_buffering)
                         statusChip.setChipBackgroundColorResource(android.R.color.holo_orange_light)
-                        
+
                         statusOverlay.isVisible = true
                         statusText.isVisible = true
                         statusText.text = root.context.getString(R.string.stream_buffering)
                         liveIndicator.isVisible = false
-                        controlsOverlay.isVisible = false
+                        snapshotFab.isVisible = false
+                        qualityBadge.isVisible = true
                     }
-                    
+
                     ConnectionStatus.CONNECTED -> {
                         statusChip.text = root.context.getString(R.string.stream_online)
                         statusChip.setChipBackgroundColorResource(android.R.color.holo_green_light)
-                        playPauseButton.text = root.context.getString(R.string.stream_stop)
-                        
+
                         statusOverlay.isVisible = false
                         statusText.isVisible = false
                         liveIndicator.isVisible = true
-                        controlsOverlay.isVisible = true
+                        snapshotFab.isVisible = true
+                        qualityBadge.isVisible = true
                     }
-                    
+
                     ConnectionStatus.ERROR -> {
                         statusChip.text = root.context.getString(R.string.stream_error)
                         statusChip.setChipBackgroundColorResource(android.R.color.holo_red_light)
-                        
+
                         statusOverlay.isVisible = true
                         statusText.isVisible = true
                         statusText.text = root.context.getString(R.string.stream_error)
                         liveIndicator.isVisible = false
-                        controlsOverlay.isVisible = false
+                        snapshotFab.isVisible = false
+                        qualityBadge.isVisible = true
                     }
                 }
             }
@@ -169,27 +197,28 @@ class CameraStreamAdapter(
             binding.apply {
                 if (stream.isActive && metrics != null) {
                     metricsLayout.isVisible = true
-                    
+                    metricsSpacer.isVisible = false
+
                     val qualityText = "${metrics.resolution} • ${metrics.fps}fps"
                     this.qualityText.text = qualityText
-                    
+
                     latencyText.text = "${metrics.latencyMs}ms"
                 } else {
                     metricsLayout.isVisible = false
+                    metricsSpacer.isVisible = true
                 }
             }
         }
         
         private fun showQualityDialog(stream: CameraStream) {
-            // For now, cycle through qualities
-            val currentQuality = stream.quality
-            val nextQuality = when (currentQuality) {
-                VideoQuality.LOW -> VideoQuality.MEDIUM
-                VideoQuality.MEDIUM -> VideoQuality.HIGH
-                VideoQuality.HIGH -> VideoQuality.ULTRA
-                VideoQuality.ULTRA -> VideoQuality.LOW
+            val bottomSheet = QualityBottomSheetFragment.newInstance(
+                currentQuality = stream.quality,
+                networkType = networkType,
+                recommendedQuality = recommendedQuality
+            ) { selectedQuality ->
+                onQualityChange(stream, selectedQuality)
             }
-            onQualityChange(stream, nextQuality)
+            bottomSheet.show(fragmentManager, "QualityBottomSheet")
         }
     }
     

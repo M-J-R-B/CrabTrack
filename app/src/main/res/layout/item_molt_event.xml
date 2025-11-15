@@ -31,7 +31,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
                 android:text="Ecdysis"
-                android:textSize="12sp"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
                 style="@style/Widget.Material3.Chip.Assist.Elevated"
                 tools:text="Ecdysis" />
 

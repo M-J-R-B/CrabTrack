@@ -22,11 +22,26 @@
             android:layout_margin="12dp"
             android:gravity="center"
             android:text="@string/alert_indicator"
-            android:textColor="@color/white"
-            android:textSize="14sp"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="@color/text_primary"
             android:textStyle="bold" />
 
     </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/text_empty_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connecting to sensors...\nPlease wait"
+        android:textAlignment="center"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        android:padding="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh_layout"

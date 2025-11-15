@@ -9,11 +9,15 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.crabtrack.app.core.Defaults
 import com.crabtrack.app.data.model.Thresholds
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +27,7 @@ private val Context.thresholdsDataStore: DataStore<Preferences> by preferencesDa
 class ThresholdsStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     companion object {
         private val PH_MIN_KEY = doublePreferencesKey("ph_min")
@@ -42,11 +47,13 @@ class ThresholdsStore @Inject constructor(
     
     private val _thresholds = MutableStateFlow(Defaults.createDefaultThresholds())
     val thresholds: StateFlow<Thresholds> = _thresholds.asStateFlow()
-    
+
     init {
-        // Initialize StateFlow with persisted values
-        getThresholds().also { flow ->
-            // This will be handled by the Flow collection in the consuming classes
+        // Initialize StateFlow with persisted values from DataStore
+        scope.launch {
+            getThresholds().collect { thresholds ->
+                _thresholds.value = thresholds
+            }
         }
     }
     
@@ -57,7 +64,7 @@ class ThresholdsStore @Inject constructor(
         return context.thresholdsDataStore.data.map { preferences ->
             val defaults = Defaults.createDefaultThresholds()
 
-            val thresholds = Thresholds(
+            Thresholds(
                 pHMin = preferences[PH_MIN_KEY] ?: defaults.pHMin,
                 pHMax = preferences[PH_MAX_KEY] ?: defaults.pHMax,
                 doMin = preferences[DO_MIN_KEY] ?: defaults.doMin,
@@ -72,10 +79,6 @@ class ThresholdsStore @Inject constructor(
                 tdsMax = preferences[TDS_MAX_KEY] ?: defaults.tdsMax,
                 turbidityMax = preferences[TURBIDITY_MAX_KEY] ?: defaults.turbidityMax
             )
-
-            // Update StateFlow with latest values
-            _thresholds.value = thresholds
-            thresholds
         }
     }
     

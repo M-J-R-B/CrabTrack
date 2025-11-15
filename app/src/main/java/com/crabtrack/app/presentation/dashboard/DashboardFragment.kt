@@ -43,16 +43,6 @@ class DashboardFragment : Fragment() {
         setupRecyclerView()
         setupSwipeRefresh()
         observeUiState()
-        observeLifecycleEvents()
-    }
-    
-    private fun observeLifecycleEvents() {
-        // Automatically refresh data when fragment becomes visible
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                viewModel.refreshData()
-            }
-        }
     }
 
     private fun setupRecyclerView() {
@@ -102,9 +92,22 @@ class DashboardFragment : Fragment() {
     }
 
     private fun updateUI(uiState: DashboardUiState) {
+        android.util.Log.d("DashboardFragment", "updateUI called - hasReading: ${uiState.latestReading != null}, isLoading: ${uiState.isLoading}")
+
         binding.swipeRefreshLayout.isRefreshing = uiState.isLoading
 
+        // Show/hide empty state
+        if (uiState.latestReading == null && uiState.errorMessage == null) {
+            binding.textEmptyState.visibility = View.VISIBLE
+            binding.recyclerViewSensors.visibility = View.GONE
+            android.util.Log.d("DashboardFragment", "Showing empty state")
+        } else {
+            binding.textEmptyState.visibility = View.GONE
+            binding.recyclerViewSensors.visibility = View.VISIBLE
+        }
+
         uiState.latestReading?.let { reading ->
+            android.util.Log.d("DashboardFragment", "Updating RecyclerView with reading data")
             val cards = WaterParameterCardAdapter.createCardsFromReading(reading) { parameter ->
                 viewModel.getParameterSeverity(parameter)
             }
