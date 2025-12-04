@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/swipeRefreshLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.settings.SettingsFragment">
+
+<androidx.core.widget.NestedScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    tools:context=".ui.settings.SettingsFragment"
     android:background="@color/blu">
 
     <LinearLayout
@@ -14,6 +19,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Profile Header -->
         <!-- Profile Header -->
         <androidx.cardview.widget.CardView
             android:id="@+id/profile_header_card"
@@ -46,8 +52,9 @@
 
                 <!-- User Info -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="vertical">
 
                     <TextView
@@ -64,8 +71,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="johndoe@gmail.com"
+                        android:textSize="16sp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/text_secondary" />
+                        android:textColor="@color/text_secondary"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
                     <TextView
                         android:id="@+id/text_profile_role"
@@ -80,16 +90,87 @@
                     android:id="@+id/button_edit_profile"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginStart="76dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_edit"
                     android:contentDescription="Edit Profile"
-                    android:layout_gravity="end|center_vertical"
+                    android:layout_gravity="center_vertical"
                     app:tint="@color/black" />
-
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
+
+        <!-- Profile Details Content (collapsible like thresholds) -->
+        <!-- Profile Details Content (collapsible like thresholds) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/profile_details_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Edit Profile Title -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Edit Profile"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="@color/text_primary"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Profile Picture (same circle as header) -->
+                <ImageView
+                    android:id="@+id/image_profile_edit"
+                    android:layout_width="110dp"
+                    android:layout_height="110dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/profile_circle"
+                    android:scaleType="centerCrop"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- Name -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/edit_profile_name_layout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Name"
+                    app:boxStrokeColor="@color/blu">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edit_profile_name_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Save Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_profile_save"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    android:text="Save Profile"
+                    android:backgroundTint="@color/blu"
+                    app:cornerRadius="8dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
 
         <!-- Water Quality Thresholds Clickable Header -->
         <androidx.cardview.widget.CardView
@@ -642,7 +723,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Feeding Reminder"
+                    android:text="Reminders"
                     android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
                     android:textColor="@color/text_primary"
                     android:textStyle="bold" />
@@ -688,7 +769,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Set Feeding Schedule"
+                            android:text="Set Schedule"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                             android:layout_marginBottom="16dp"
                             android:gravity="center"
@@ -736,6 +817,39 @@
                                 android:clickable="true"
                                 android:inputType="none" />
                         </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Task Type Selection -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Task Type"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:textColor="@color/text_primary" />
+
+                        <RadioGroup
+                            android:id="@+id/action_radio_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radioFeed"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Feed"
+                                android:checked="true" />
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radioClean"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Clean" />
+                        </RadioGroup>
+
 
                         <!-- Recurrence Selection -->
                         <TextView
@@ -825,289 +939,91 @@
         </androidx.cardview.widget.CardView>
 
         <!-- Advanced Settings Clickable Header -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/advanced_settings_header"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
-            app:cardUseCompatPadding="true"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?android:attr/selectableItemBackground">
+<!--        <androidx.cardview.widget.CardView-->
+<!--            android:id="@+id/advanced_settings_header"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginTop="8dp"-->
+<!--            android:layout_marginBottom="8dp"-->
+<!--            app:cardCornerRadius="12dp"-->
+<!--            app:cardElevation="4dp"-->
+<!--            app:cardUseCompatPadding="true"-->
+<!--            android:clickable="true"-->
+<!--            android:focusable="true"-->
+<!--            android:foreground="?android:attr/selectableItemBackground">-->
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp"
-                android:gravity="center_vertical">
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:padding="20dp"-->
+<!--                android:gravity="center_vertical">-->
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Data Usage &amp; Network"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                    android:textColor="@color/text_primary"
-                    android:textStyle="bold" />
+<!--                <TextView-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:text="Logs"-->
+<!--                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"-->
+<!--                    android:textColor="@color/text_primary"-->
+<!--                    android:textStyle="bold" />-->
 
-                <ImageView
-                    android:id="@+id/advanced_settings_expand_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/arrow_down_float"
-                    android:contentDescription="Expand/Collapse" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+<!--                <ImageView-->
+<!--                    android:id="@+id/advanced_settings_expand_icon"-->
+<!--                    android:layout_width="24dp"-->
+<!--                    android:layout_height="24dp"-->
+<!--                    android:src="@android:drawable/arrow_down_float"-->
+<!--                    android:contentDescription="Expand/Collapse" />-->
+<!--            </LinearLayout>-->
+<!--        </androidx.cardview.widget.CardView>-->
 
-        <!-- Collapsible Data Usage & Network Section -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/advanced_settings_content"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:visibility="gone"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardUseCompatPadding="true">
+<!--        <androidx.cardview.widget.CardView-->
+<!--            android:id="@+id/advanced_settings_content"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginBottom="24dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:cardCornerRadius="16dp"-->
+<!--            app:cardElevation="4dp"-->
+<!--            app:cardUseCompatPadding="true">-->
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:orientation="vertical"-->
+<!--                android:padding="20dp">-->
 
-                <!-- Network Status -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="#E3F2FD">
+<!--                <TextView-->
+<!--                    android:id="@+id/text_logs_title"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Schedule History"-->
+<!--                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"-->
+<!--                    android:textColor="@color/text_primary"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:layout_marginBottom="12dp" />-->
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="18dp">
+<!--                &lt;!&ndash; RecyclerView for past reminders &ndash;&gt;-->
+<!--                <androidx.recyclerview.widget.RecyclerView-->
+<!--                    android:id="@+id/logsRecyclerView"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:nestedScrollingEnabled="false" />-->
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Network Type:"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:textColor="@color/text_primary" />
+<!--                &lt;!&ndash; Empty state if no logs &ndash;&gt;-->
+<!--                <TextView-->
+<!--                    android:id="@+id/emptyLogsMessage"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="12dp"-->
+<!--                    android:text="No past reminders yet."-->
+<!--                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"-->
+<!--                    android:textColor="@color/text_secondary"-->
+<!--                    android:gravity="center"-->
+<!--                    android:visibility="gone" />-->
+<!--            </LinearLayout>-->
+<!--        </androidx.cardview.widget.CardView>-->
 
-                        <TextView
-                            android:id="@+id/text_network_type"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="WiFi"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:textColor="@color/primary"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Data Saver Toggle -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Data Saver Mode"
-                                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                                android:textColor="@color/text_primary" />
-
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/switch_data_saver"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="Reduces camera quality, increases MQTT intervals, and minimizes background sync"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/text_secondary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Daily Data Limit -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Daily Data Limit (MB)"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/daily_limit_input_layout"
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Daily Limit"
-                            app:boxStrokeColor="@color/blu"
-                            app:helperText="e.g., 200 for 200 MB/day"
-                            app:helperTextTextColor="@color/text_secondary">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/daily_limit_input"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:text="200" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/button_set_limit"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginTop="8dp"
-                            android:text="Set Limit"
-                            app:cornerRadius="8dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Current Data Usage -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Current Usage"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="16dp" />
-
-                        <!-- Today's Usage -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="8dp">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Today:"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="@color/text_primary" />
-
-                            <TextView
-                                android:id="@+id/text_today_usage"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0.0 MB"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="@color/primary"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <!-- This Month's Usage -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="8dp">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="This Month:"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="@color/text_primary" />
-
-                            <TextView
-                                android:id="@+id/text_month_usage"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0.0 MB"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="@color/primary"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <!-- Session Usage -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="This Session:"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="@color/text_primary" />
-
-                            <TextView
-                                android:id="@+id/text_session_usage"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0.0 MB"
-                                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="@color/primary"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/button_Logout"
@@ -1115,12 +1031,14 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_gravity="center_horizontal"
-            android:backgroundTint="@color/secondary"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="16dp"
+            android:backgroundTint="@color/secondary"
             android:text="Logout"
             app:cornerRadius="8dp"
             app:icon="@android:drawable/ic_lock_power_off"
             app:iconGravity="textStart" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

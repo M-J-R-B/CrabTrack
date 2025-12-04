@@ -14,9 +14,6 @@ import com.crabtrack.app.data.source.mock.MockTelemetrySource
 import com.crabtrack.app.data.source.molt.MockMoltSource
 import com.crabtrack.app.data.source.molt.MoltSource
 import com.crabtrack.app.data.source.molt.VisionMoltSource
-import com.crabtrack.app.data.source.camera.CameraSource
-import com.crabtrack.app.data.source.camera.MockCameraSource
-import com.crabtrack.app.data.repository.CameraRepository
 import com.crabtrack.app.data.source.firebase.FirebaseTelemetrySource
 import com.crabtrack.app.data.source.mqtt.MqttTelemetrySource
 import com.crabtrack.app.data.source.mqtt.MqttConfig
@@ -25,6 +22,7 @@ import com.crabtrack.app.data.util.DataUsageTracker
 import com.crabtrack.app.domain.usecase.ComposeMoltGuidanceUseCase
 import com.crabtrack.app.domain.usecase.EvaluateMoltRiskUseCase
 import com.crabtrack.app.domain.usecase.EvaluateThresholdsUseCase
+import com.crabtrack.app.notification.AlertsNotifier
 import com.crabtrack.app.notification.MoltingNotifier
 import com.crabtrack.app.CrabTrackApplication
 import dagger.Module
@@ -112,7 +110,7 @@ object AppModule {
     fun provideTelemetryRepository(
         telemetrySource: TelemetrySource,
         evaluateThresholdsUseCase: EvaluateThresholdsUseCase,
-        applicationScope: CoroutineScope,
+        @ApplicationScope applicationScope: CoroutineScope,
         thresholdsStore: ThresholdsStore
     ): TelemetryRepository {
         return TelemetryRepository(telemetrySource, evaluateThresholdsUseCase, applicationScope, thresholdsStore)
@@ -122,6 +120,7 @@ object AppModule {
     
     @Provides
     @Singleton
+    @ApplicationScope
     fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
     
@@ -145,7 +144,7 @@ object AppModule {
     fun provideMoltRepository(
         moltSource: MoltSource,
         evaluateMoltRiskUseCase: EvaluateMoltRiskUseCase,
-        applicationScope: CoroutineScope
+        @ApplicationScope applicationScope: CoroutineScope
     ): MoltRepository {
         return MoltRepository(moltSource, evaluateMoltRiskUseCase, applicationScope)
     }
@@ -159,23 +158,45 @@ object AppModule {
     ): MoltingNotifier {
         return MoltingNotifier(context, moltRepository, composeMoltGuidanceUseCase)
     }
-    
-    // Camera-related providers
-    
+
     @Provides
     @Singleton
-    fun provideCameraSource(
-        mockCameraSource: MockCameraSource
-    ): CameraSource {
-        return mockCameraSource // Default to mock for development
+    fun provideAlertsNotifier(
+        @ApplicationContext context: Context,
+        telemetryRepository: TelemetryRepository
+    ): AlertsNotifier {
+        return AlertsNotifier(context, telemetryRepository)
     }
-    
+
+    // Firebase Threshold Sync providers
+
     @Provides
     @Singleton
-    fun provideCameraRepository(
-        cameraSource: CameraSource,
-        applicationScope: CoroutineScope
-    ): CameraRepository {
-        return CameraRepository(cameraSource, applicationScope)
+    fun provideFirebaseThresholdRepository(
+        firebaseAuth: com.google.firebase.auth.FirebaseAuth,
+        firebaseDatabase: com.google.firebase.database.FirebaseDatabase,
+        preferencesDataStore: PreferencesDataStore,
+        @ApplicationScope scope: CoroutineScope
+    ): com.crabtrack.app.data.repository.FirebaseThresholdRepository {
+        return com.crabtrack.app.data.repository.FirebaseThresholdRepository(
+            firebaseAuth,
+            firebaseDatabase,
+            preferencesDataStore,
+            scope
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideThresholdMigrationManager(
+        preferencesDataStore: PreferencesDataStore,
+        firebaseThresholdRepository: com.crabtrack.app.data.repository.FirebaseThresholdRepository,
+        @ApplicationContext context: Context
+    ): com.crabtrack.app.data.migration.ThresholdMigrationManager {
+        return com.crabtrack.app.data.migration.ThresholdMigrationManager(
+            preferencesDataStore,
+            firebaseThresholdRepository,
+            context
+        )
     }
 }

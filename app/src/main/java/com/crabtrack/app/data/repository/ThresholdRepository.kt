@@ -9,24 +9,38 @@ import javax.inject.Singleton
 
 @Singleton
 class ThresholdRepository @Inject constructor(
-    private val preferencesDataStore: PreferencesDataStore
+    private val preferencesDataStore: PreferencesDataStore,
+    private val firebaseThresholdRepository: FirebaseThresholdRepository
 ) {
-    
+
+    /**
+     * Get threshold for a specific sensor
+     * Returns local cache value - updated automatically by Firebase listener
+     */
     fun getThreshold(sensorType: SensorType): Flow<Threshold> {
         return preferencesDataStore.getThreshold(sensorType)
     }
-    
+
+    /**
+     * Get all thresholds with real-time Firebase sync
+     * Firebase listener automatically updates local cache
+     */
     fun getAllThresholds(): Flow<Map<SensorType, Threshold>> {
-        return preferencesDataStore.getAllThresholds()
+        return firebaseThresholdRepository.observeThresholds()
     }
-    
+
+    /**
+     * Update threshold - saves to Firebase (cloud as source of truth)
+     * Local cache updated automatically via Firebase listener
+     */
     suspend fun updateThreshold(threshold: Threshold) {
-        preferencesDataStore.updateThreshold(threshold)
+        firebaseThresholdRepository.saveThreshold(threshold)
     }
-    
+
+    /**
+     * Batch update thresholds - saves to Firebase
+     */
     suspend fun updateThresholds(thresholds: List<Threshold>) {
-        thresholds.forEach { threshold ->
-            preferencesDataStore.updateThreshold(threshold)
-        }
+        firebaseThresholdRepository.saveAllThresholds(thresholds)
     }
 }

@@ -1,34 +1,44 @@
 package com.crabtrack.app.ui.login
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.crabtrack.app.R
 import com.crabtrack.app.databinding.FragmentLoginBinding
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
+import com.crabtrack.app.presentation.auth.AuthViewModel
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
+/**
+ * Login fragment with simplified email-only authentication.
+ *
+ * MAJOR SIMPLIFICATION from previous version:
+ * - Direct email/password login (no username→email lookup)
+ * - Uses AuthViewModel (MVVM pattern)
+ * - No direct Firebase calls
+ * - Removed ~140 lines of complex lookup logic
+ * - Navigation handled by MainActivity auth guard
+ */
+@AndroidEntryPoint
 class LoginFragment : Fragment() {
 
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var auth: FirebaseAuth
-    private lateinit var database: DatabaseReference
-
-    private val TAG = "LoginFragment"
-    private var queryTimeoutHandler: Handler? = null
-    private var queryTimedOut = false
+    // Use shared AuthViewModel across auth screens
+    private val authViewModel: AuthViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -40,185 +50,106 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        auth = FirebaseAuth.getInstance()
-        database = FirebaseDatabase.getInstance().getReference("users")
+        authViewModel.resetLoginState()
 
-        Log.d(TAG, "LoginFragment initialized")
-        Log.d(TAG, "Firebase Database URL: ${FirebaseDatabase.getInstance().reference.toString()}")
+        setupObservers()
+        setupClickListeners()
+    }
 
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                authViewModel.loginUiState.collect { state ->
+                    updateUi(state)
+                }
+            }
+        }
+    }
+
+    private fun showLoginSuccessDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_success_profile, null)
+
+        val dialog = MaterialAlertDialogBuilder(
+            requireContext(),
+            R.style.CrabTrack_AlertDialog
+        )
+            .setView(dialogView)
+            .create()
+
+        dialog.setCancelable(true)
+        dialog.setCanceledOnTouchOutside(true)
+
+        val textTitle = dialogView.findViewById<TextView>(R.id.text_title)
+        val textMessage = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonOk = dialogView.findViewById<MaterialButton>(R.id.button_ok)
+
+        textTitle.text = "Login Successful"
+        textMessage.text = "Welcome to CrabTrack!"
+        buttonOk.text = "Continue"
+
+        buttonOk.setOnClickListener {
+            dialog.dismiss()
+            // Now YOU control navigation:
+            findNavController().navigate(R.id.action_login_to_main)
+        }
+
+        dialog.show()
+    }
+
+
+
+    private fun setupClickListeners() {
         binding.buttonLogin.setOnClickListener {
-            Log.d(TAG, "Login button clicked")
-            val username = binding.editTextUsername.text.toString().trim()
+            val email = binding.editTextUsername.text.toString().trim()  // Note: ID is still "Username" but holds email
             val password = binding.textInputPassword.editText?.text.toString().trim()
 
-            if (username.isEmpty() || password.isEmpty()) {
-                Log.w(TAG, "Login failed: Empty username or password")
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Please enter username and password", Toast.LENGTH_SHORT).show()
-                }
+            // Validate inputs
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(requireContext(), "Please enter email and password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Check network connectivity
-            if (!isNetworkAvailable()) {
-                Log.e(TAG, "Login failed: No network connection")
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "No internet connection. Please check your network.", Toast.LENGTH_LONG).show()
-                }
+            // Basic email validation
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                Toast.makeText(requireContext(), "Please enter a valid email address", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            Log.i(TAG, "Network available, checking Firebase connection...")
-
-            // Show loading state
-            if (isAdded) {
-                Toast.makeText(requireContext(), "Connecting to server...", Toast.LENGTH_SHORT).show()
-            }
-
-            performLogin(username, password)
+            // Login via ViewModel (direct email/password - no username lookup!)
+            authViewModel.login(email, password)
         }
 
         binding.buttonSignUp.setOnClickListener {
-            if (isAdded) findNavController().navigate(R.id.action_login_to_register)
+            authViewModel.resetLoginState()
+            findNavController().navigate(R.id.action_login_to_register)
         }
 
         binding.textForgotPassword.setOnClickListener {
-            if (isAdded) findNavController().navigate(R.id.action_login_to_forgotPassword)
+            authViewModel.resetLoginState()
+            findNavController().navigate(R.id.action_login_to_forgotPassword)
         }
     }
 
-    private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    private fun updateUi(state: com.crabtrack.app.presentation.auth.LoginUiState) {
+        binding.buttonLogin.isEnabled = !state.isLoading
+        binding.buttonSignUp.isEnabled = !state.isLoading
 
-        return when {
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
-                Log.d(TAG, "Connected via WiFi")
-                true
-            }
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                Log.d(TAG, "Connected via Mobile Data")
-                true
-            }
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
-                Log.d(TAG, "Connected via Ethernet")
-                true
-            }
-            else -> false
+        // Handle error
+        state.error?.let { error ->
+            Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show()
+            authViewModel.clearLoginError()
+        }
+
+        // Handle success
+        if (state.isSuccess) {
+            showLoginSuccessDialog()
+            authViewModel.resetLoginState()
         }
     }
 
-    private fun performLogin(username: String, password: String) {
-        Log.i(TAG, "Attempting login for username: $username")
-        queryTimedOut = false
-
-        // Set timeout for Firebase query (10 seconds)
-        queryTimeoutHandler = Handler(Looper.getMainLooper())
-        queryTimeoutHandler?.postDelayed({
-            if (!queryTimedOut) {
-                queryTimedOut = true
-                Log.e(TAG, "Firebase query timeout after 10 seconds")
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Connection timeout. Please check your internet connection and try again.", Toast.LENGTH_LONG).show()
-                }
-            }
-        }, 10000)
-
-        try {
-            Log.d(TAG, "Querying Firebase Database for username: $username")
-
-            // 🔹 Step 1: Find user's email from username in Realtime DB
-            val query = database.orderByChild("username").equalTo(username)
-            Log.d(TAG, "Query created: ${query.ref.toString()}")
-
-            query.addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        queryTimeoutHandler?.removeCallbacksAndMessages(null)
-
-                        if (queryTimedOut) {
-                            Log.w(TAG, "Query completed but already timed out")
-                            return
-                        }
-
-                        Log.d(TAG, "onDataChange called, snapshot exists: ${snapshot.exists()}, children count: ${snapshot.childrenCount}")
-
-                        if (!isAdded) {
-                            Log.w(TAG, "Fragment not added, aborting login")
-                            return // prevent crash if fragment detached
-                        }
-
-                        if (snapshot.exists()) {
-                            Log.i(TAG, "User found in database")
-                            val userSnapshot = snapshot.children.first()
-                            val email = userSnapshot.child("email").getValue(String::class.java)
-                            Log.d(TAG, "Email retrieved: ${email?.let { "***@${it.substringAfter("@")}" } ?: "null"}")
-
-                            if (email != null) {
-                                // 🔹 Step 2: Sign in using Firebase Authentication
-                                Log.i(TAG, "Proceeding to Firebase Authentication")
-                                signInWithFirebase(email, password)
-                            } else {
-                                Log.e(TAG, "Email field is null in database")
-                                Toast.makeText(requireContext(), "User email not found", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Log.w(TAG, "No user found with username: $username")
-                            Toast.makeText(requireContext(), "Account not found", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-
-                    override fun onCancelled(error: DatabaseError) {
-                        queryTimeoutHandler?.removeCallbacksAndMessages(null)
-
-                        if (queryTimedOut) {
-                            Log.w(TAG, "Query cancelled but already timed out")
-                            return
-                        }
-
-                        Log.e(TAG, "Database query cancelled - Error: ${error.code}, Message: ${error.message}, Details: ${error.details}")
-
-                        if (!isAdded) return
-                        Toast.makeText(requireContext(), "Database error: ${error.message}\nPlease check your internet connection.", Toast.LENGTH_LONG).show()
-                    }
-                })
-
-            Log.d(TAG, "Listener attached to query")
-        } catch (e: Exception) {
-            queryTimeoutHandler?.removeCallbacksAndMessages(null)
-            Log.e(TAG, "Exception during login attempt: ${e.message}", e)
-            if (isAdded) {
-                Toast.makeText(requireContext(), "Login error: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun signInWithFirebase(email: String, password: String) {
-        Log.i(TAG, "Attempting Firebase Authentication")
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                Log.i(TAG, "Firebase Authentication successful")
-                // ✅ Prevent crash if fragment is already detached
-                if (!isAdded) return@addOnSuccessListener
-
-                Toast.makeText(requireContext(), "Login successful!", Toast.LENGTH_SHORT).show()
-
-                // Navigate only if still attached
-                if (isAdded) {
-                    Log.d(TAG, "Navigating to main screen")
-                    findNavController().navigate(R.id.action_login_to_main)
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Firebase Authentication failed: ${e.message}", e)
-                if (!isAdded) return@addOnFailureListener
-                Toast.makeText(requireContext(), "Login failed: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        queryTimeoutHandler?.removeCallbacksAndMessages(null)
         _binding = null
     }
 }

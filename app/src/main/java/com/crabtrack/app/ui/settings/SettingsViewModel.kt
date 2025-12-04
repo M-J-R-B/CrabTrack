@@ -1,5 +1,6 @@
 package com.crabtrack.app.ui.settings
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crabtrack.app.data.local.ThresholdsStore
@@ -23,6 +24,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.tasks.await
+import com.crabtrack.app.core.Defaults
 
 
 enum class SaveState {
@@ -33,6 +35,7 @@ data class SettingsUiState(
     val thresholds: Thresholds? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val validationErrors: Map<String, String> = emptyMap()
@@ -42,6 +45,10 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val thresholdsStore: ThresholdsStore
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "SettingsViewModel"
+    }
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -102,28 +109,18 @@ class SettingsViewModel @Inject constructor(
     val reminderMessage: StateFlow<String?> = _reminderMessage.asStateFlow()
 
     init {
+        Log.d(TAG, "SettingsViewModel initialized")
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        Log.d(TAG, "Current user: ${currentUser?.uid ?: "NONE"}")
         loadThresholds()
         loadFeedingReminders()
     }
 
     private fun loadThresholds() {
+        Log.d(TAG, "loadThresholds() called - INITIAL LOAD")
         viewModelScope.launch {
-            thresholdsStore.getThresholds()
-                .catch { exception ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to load settings: ${exception.message}"
-                    )
-                }
-                .collect { thresholds ->
-                    _uiState.value = _uiState.value.copy(
-                        thresholds = thresholds,
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                    // Populate form fields with loaded values
-                    populateFormFields(thresholds)
-                }
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            loadThresholdsFromFirebase()  // ✅ Use same source as refresh
         }
     }
     
@@ -160,7 +157,6 @@ class SettingsViewModel @Inject constructor(
         val allFilled = fields.all { it.isNotBlank() && it.toDoubleOrNull() != null }
         if (!allFilled) {
             _uiState.value = _uiState.value.copy(
-                errorMessage = "Please fill all fields correctly before saving."
             )
             _saveState.value = SaveState.Error
             return
@@ -198,7 +194,6 @@ class SettingsViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         validationErrors = validationErrors,
-                        errorMessage = "Invalid input detected. Please fix errors before saving."
                     )
                     _saveState.value = SaveState.Error
                     return@launch
@@ -227,28 +222,45 @@ class SettingsViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 🔹 Step 6: Save to Firebase
+                // 🔹 Step 6: Save to Firebase (to /thresholds to match web)
                 val dbRef = FirebaseDatabase.getInstance()
                     .getReference("users")
                     .child(user.uid)
-                    .child("settings")
+                    .child("thresholds")
 
-                val dataMap = mapOf(
-                    "ph" to mapOf("min" to thresholds.pHMin, "max" to thresholds.pHMax),
-                    "salinity" to mapOf("min" to thresholds.salinityMin, "max" to thresholds.salinityMax),
-                    "temperature" to mapOf("min" to thresholds.tempMin, "max" to thresholds.tempMax),
-                    "tds" to mapOf("min" to thresholds.tdsMin, "max" to thresholds.tdsMax),
-                    "turbidity" to mapOf("max" to thresholds.turbidityMax),
-                    "version" to 2,
-                    "updatedAt" to ServerValue.TIMESTAMP
-                )
+                // Save each sensor separately with enabled flag (matching web structure)
+                val updates = mutableMapOf<String, Any>()
 
-                dbRef.setValue(dataMap)
+                // pH
+                updates["ph/enabled"] = true
+                updates["ph/min"] = thresholds.pHMin
+                updates["ph/max"] = thresholds.pHMax
+
+                // Salinity
+                updates["salinity/enabled"] = true
+                updates["salinity/min"] = thresholds.salinityMin
+                updates["salinity/max"] = thresholds.salinityMax
+
+                // Temperature
+                updates["temperature/enabled"] = true
+                updates["temperature/min"] = thresholds.tempMin
+                updates["temperature/max"] = thresholds.tempMax
+
+                // TDS
+                updates["tds/enabled"] = true
+                updates["tds/min"] = thresholds.tdsMin
+                updates["tds/max"] = thresholds.tdsMax
+
+                // Turbidity
+                updates["turbidity/enabled"] = true
+                updates["turbidity/min"] = 0.0
+                updates["turbidity/max"] = thresholds.turbidityMax
+
+                dbRef.updateChildren(updates)
                     .addOnSuccessListener {
                         android.util.Log.d("SettingsDebug", "✅ Firebase save successful.")
                         _uiState.value = _uiState.value.copy(
                             isSaving = false,
-                            successMessage = "Settings saved successfully!",
                             validationErrors = emptyMap()
                         )
                         _saveState.value = SaveState.Success
@@ -271,6 +283,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun resetSaveState() {
+        _saveState.value = SaveState.Idle
+    }
+
+
+
     fun resetToDefaults() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
@@ -279,7 +297,6 @@ class SettingsViewModel @Inject constructor(
                 thresholdsStore.resetToDefaults()
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    successMessage = "Settings reset to defaults",
                     errorMessage = null,
                     validationErrors = emptyMap()
                 )
@@ -480,33 +497,106 @@ class SettingsViewModel @Inject constructor(
 
 
     fun loadThresholdsFromFirebase() {
-        val user = FirebaseAuth.getInstance().currentUser ?: return
+        // ✅ AUTH GUARD: Don't proceed if no user is logged in
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            Log.w(TAG, "Cannot load thresholds - no user logged in")
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = "Please log in to view thresholds"
+            )
+            return
+        }
+
         val uid = user.uid
+        Log.d(TAG, "Fetching thresholds from Firebase for user: $uid")
+
         val dbRef = FirebaseDatabase.getInstance()
             .getReference("users")
             .child(uid)
-            .child("settings")
+            .child("thresholds")
+
+        Log.d(TAG, "Firebase path: users/$uid/thresholds")
 
         _uiState.value = _uiState.value.copy(isLoading = true)
 
         dbRef.get().addOnSuccessListener { snapshot ->
+            Log.d(TAG, "Firebase fetch SUCCESS")
+            Log.d(TAG, "Snapshot exists: ${snapshot.exists()}")
+
             if (snapshot.exists()) {
-                val thresholds = snapshot.getValue(Thresholds::class.java)
-                if (thresholds != null) {
-                    _uiState.value = _uiState.value.copy(
-                        thresholds = thresholds,
-                        isLoading = false
-                    )
-                    populateFormFields(thresholds)
-                }
+                // Log sample values for debugging
+                Log.d(TAG, "pH min from Firebase: ${snapshot.child("ph/min").getValue(Double::class.java)}")
+                Log.d(TAG, "pH max from Firebase: ${snapshot.child("ph/max").getValue(Double::class.java)}")
+
+                // Parse the web structure (enabled, min, max per sensor)
+                val thresholds = Thresholds(
+                    pHMin = snapshot.child("ph/min").getValue(Double::class.java) ?: Defaults.PH_MIN,
+                    pHMax = snapshot.child("ph/max").getValue(Double::class.java) ?: Defaults.PH_MAX,
+                    doMin = snapshot.child("dissolved_oxygen/min").getValue(Double::class.java) ?: Defaults.DISSOLVED_OXYGEN_MIN,
+                    salinityMin = snapshot.child("salinity/min").getValue(Double::class.java) ?: Defaults.SALINITY_MIN,
+                    salinityMax = snapshot.child("salinity/max").getValue(Double::class.java) ?: Defaults.SALINITY_MAX,
+                    ammoniaMax = snapshot.child("ammonia/max").getValue(Double::class.java) ?: Defaults.AMMONIA_MAX,
+                    tempMin = snapshot.child("temperature/min").getValue(Double::class.java) ?: Defaults.TEMPERATURE_MIN,
+                    tempMax = snapshot.child("temperature/max").getValue(Double::class.java) ?: Defaults.TEMPERATURE_MAX,
+                    levelMin = snapshot.child("water_level/min").getValue(Double::class.java) ?: Defaults.WATER_LEVEL_MIN,
+                    levelMax = snapshot.child("water_level/max").getValue(Double::class.java) ?: Defaults.WATER_LEVEL_MAX,
+                    tdsMin = snapshot.child("tds/min").getValue(Double::class.java) ?: Defaults.TDS_MIN,
+                    tdsMax = snapshot.child("tds/max").getValue(Double::class.java) ?: Defaults.TDS_MAX,
+                    turbidityMax = snapshot.child("turbidity/max").getValue(Double::class.java) ?: Defaults.TURBIDITY_MAX
+                )
+
+                Log.d(TAG, "Parsed thresholds: pHMin=${thresholds.pHMin}, pHMax=${thresholds.pHMax}")
+
+                _uiState.value = _uiState.value.copy(
+                    thresholds = thresholds,
+                    isLoading = false,
+                    errorMessage = null
+                )
+                populateFormFields(thresholds)
             } else {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                // ✅ EDGE CASE: No thresholds found in Firebase - use defaults
+                Log.w(TAG, "No thresholds found for user - using defaults")
+                val defaultThresholds = Thresholds(
+                    pHMin = Defaults.PH_MIN,
+                    pHMax = Defaults.PH_MAX,
+                    doMin = Defaults.DISSOLVED_OXYGEN_MIN,
+                    salinityMin = Defaults.SALINITY_MIN,
+                    salinityMax = Defaults.SALINITY_MAX,
+                    ammoniaMax = Defaults.AMMONIA_MAX,
+                    tempMin = Defaults.TEMPERATURE_MIN,
+                    tempMax = Defaults.TEMPERATURE_MAX,
+                    levelMin = Defaults.WATER_LEVEL_MIN,
+                    levelMax = Defaults.WATER_LEVEL_MAX,
+                    tdsMin = Defaults.TDS_MIN,
+                    tdsMax = Defaults.TDS_MAX,
+                    turbidityMax = Defaults.TURBIDITY_MAX
+                )
+                _uiState.value = _uiState.value.copy(
+                    thresholds = defaultThresholds,
+                    isLoading = false,
+                    errorMessage = null
+                )
+                populateFormFields(defaultThresholds)
             }
         }.addOnFailureListener { e ->
+            Log.e(TAG, "Firebase fetch FAILED", e)
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                errorMessage = "Failed to load Firebase data: ${e.message}"
+                errorMessage = "Failed to load thresholds from server: ${e.message}"
             )
+        }
+    }
+
+    fun refreshThresholdsFromFirebase() {
+        Log.d(TAG, "refreshThresholdsFromFirebase() called - SWIPE REFRESH")
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isRefreshing = true)
+            try {
+                loadThresholdsFromFirebase()
+            } finally {
+                _uiState.value = _uiState.value.copy(isRefreshing = false)
+            }
         }
     }
 
@@ -526,12 +616,30 @@ class SettingsViewModel @Inject constructor(
             override fun onDataChange(snapshot: DataSnapshot) {
                 val reminders = mutableListOf<FeedingReminder>()
                 for (child in snapshot.children) {
-                    val reminder = child.getValue(FeedingReminder::class.java)
-                    if (reminder != null) {
-                        // Add the Firebase key as the ID
-                        reminders.add(reminder.copy(id = child.key ?: ""))
+
+                    // 🔹 Read raw actionType from Firebase, default to "FEED" if missing
+                    // 🔹 Read raw actionType from Firebase, default to "FEED" if missing
+                    val actionTypeStr = child.child("actionType").value?.toString() ?: "FEED"
+
+                    val actionTypeEnum = try {
+                        com.crabtrack.app.data.model.ActionType.valueOf(actionTypeStr)
+                    } catch (_: Exception) {
+                        com.crabtrack.app.data.model.ActionType.FEED
                     }
+
+// 🔹 Read the rest of the reminder normally
+                    val reminder = child.getValue(com.crabtrack.app.data.model.FeedingReminder::class.java)
+                    if (reminder != null) {
+                        reminders.add(
+                            reminder.copy(
+                                id = child.key ?: "",
+                                actionType = actionTypeEnum.name   // ✅ now a String
+                            )
+                        )
+                    }
+
                 }
+
                 // Sort by timestamp (earliest first)
                 _feedingReminders.value = reminders.sortedBy { it.timestamp }
             }

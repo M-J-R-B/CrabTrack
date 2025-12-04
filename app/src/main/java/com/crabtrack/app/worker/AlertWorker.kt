@@ -4,18 +4,20 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.crabtrack.app.data.model.AlertLevel
-import com.crabtrack.app.domain.usecase.CheckAlertsUseCase
+import com.crabtrack.app.data.model.AlertSeverity
+import com.crabtrack.app.data.repository.TelemetryRepository
 import com.crabtrack.app.notification.NotificationHelper
+import com.google.firebase.auth.FirebaseAuth
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withTimeoutOrNull
 
 @HiltWorker
 class AlertWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val checkAlertsUseCase: CheckAlertsUseCase,
+    private val telemetryRepository: TelemetryRepository,
     private val notificationHelper: NotificationHelper
 ) : CoroutineWorker(context, params) {
 
@@ -25,26 +27,46 @@ class AlertWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        android.util.Log.d(TAG, "AlertWorker starting background check...")
+
         return try {
-            // Get current alerts
-            val alerts = checkAlertsUseCase().first()
-            
-            // Show notifications for active alerts
+            // Check if user is authenticated
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            if (currentUser == null) {
+                android.util.Log.w(TAG, "No user logged in, skipping alert check")
+                return Result.success()
+            }
+
+            // Get current alerts with timeout to prevent hanging
+            val alerts = withTimeoutOrNull(30_000L) { // 30 second timeout
+                telemetryRepository.allAlerts.firstOrNull()
+            }
+
+            if (alerts == null) {
+                android.util.Log.w(TAG, "Alert check timed out or returned null")
+                return Result.retry()
+            }
+
+            android.util.Log.d(TAG, "Received ${alerts.size} alerts")
+
+            // Show notifications for critical and warning alerts
             alerts.forEach { alert ->
-                when (alert.alertLevel) {
-                    AlertLevel.WARNING, AlertLevel.CRITICAL -> {
-                        notificationHelper.showSensorAlert(alert)
+                when (alert.severity) {
+                    AlertSeverity.CRITICAL, AlertSeverity.WARNING -> {
+                        android.util.Log.i(TAG, "Showing alert: ${alert.parameter} - ${alert.message}")
+                        notificationHelper.showWaterQualityAlert(alert)
                     }
-                    AlertLevel.NORMAL -> {
-                        // Clear any existing notifications for this sensor
-                        notificationHelper.clearSensorAlert(alert.sensorType)
+                    AlertSeverity.INFO -> {
+                        // Don't show notifications for info alerts
+                        android.util.Log.d(TAG, "Skipping INFO alert: ${alert.parameter}")
                     }
                 }
             }
-            
+
+            android.util.Log.d(TAG, "AlertWorker completed successfully")
             Result.success()
         } catch (exception: Exception) {
-            // Log the error in a production app
+            android.util.Log.e(TAG, "AlertWorker failed: ${exception.message}", exception)
             Result.retry()
         }
     }

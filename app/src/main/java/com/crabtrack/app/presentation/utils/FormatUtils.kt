@@ -1,35 +1,56 @@
 package com.crabtrack.app.presentation.utils
 
+import android.text.format.DateFormat
 import com.crabtrack.app.data.model.WaterReading
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 object FormatUtils {
-    
+
     fun formatpH(value: Double): String = String.format(Locale.US, "%.1f", value)
-    
+
     fun formatDissolvedOxygen(value: Double): String = String.format(Locale.US, "%.1f mg/L", value)
-    
+
     fun formatSalinity(value: Double): String = String.format(Locale.US, "%.1f ppt", value)
-    
+
     fun formatAmmonia(value: Double): String = String.format(Locale.US, "%.1f mg/L", value)
-    
+
     fun formatTemperature(value: Double): String = String.format(Locale.US, "%.1f°C", value)
-    
+
     fun formatWaterLevel(value: Double): String = String.format(Locale.US, "%.1f cm", value)
 
     fun formatTDS(value: Double): String = String.format(Locale.US, "%.0f ppm", value)
 
     fun formatTurbidity(value: Double): String = String.format(Locale.US, "%.1f NTU", value)
 
+    /**
+     * Formats timestamp in milliseconds to device local time.
+     * Assumes incoming timestamps are in UTC (from server/ESP32).
+     * Uses system default timezone for display.
+     */
     fun formatTimestamp(timestampMs: Long): String {
-        val formatter = SimpleDateFormat("MMM dd, HH:mm", Locale.US)
+        val formatter = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+        // SimpleDateFormat automatically converts from UTC epoch to device timezone
+        // No need to explicitly set timezone - epochMs is already in UTC
         return formatter.format(Date(timestampMs))
     }
-    
+
+    /**
+     * Formats time-only in device local time.
+     * Uses 24-hour format (HH:mm:ss).
+     */
     fun formatTimeOnly(timestampMs: Long): String {
-        val formatter = SimpleDateFormat("HH:mm:ss", Locale.US)
+        val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        return formatter.format(Date(timestampMs))
+    }
+
+    /**
+     * Formats timestamp with explicit timezone indicator.
+     * Useful for debugging timezone issues.
+     */
+    fun formatTimestampWithZone(timestampMs: Long): String {
+        val formatter = SimpleDateFormat("MMM dd, HH:mm z", Locale.getDefault())
         return formatter.format(Date(timestampMs))
     }
     

@@ -16,7 +16,7 @@
         android:id="@+id/titleText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/camera_title"
+        android:text="Live Streams"
         android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
         android:textStyle="bold"
         android:layout_marginBottom="16dp" />
@@ -30,77 +30,301 @@
         android:layout_marginBottom="16dp"
         android:paddingHorizontal="0dp">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/tankChipGroup"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:singleSelection="true"
-            app:selectionRequired="true"
-            app:chipSpacingHorizontal="8dp">
+            android:orientation="horizontal">
 
-            <!-- Chips added dynamically in CameraFragment -->
-
-        </com.google.android.material.chip.ChipGroup>
-    </HorizontalScrollView>
-
-    <!-- Recycler + overlays (use FrameLayout for overlay behavior) -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <!-- Streams RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/streamsRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="8dp"
-            tools:listitem="@layout/item_camera_stream" />
-
-        <!-- Empty State (overlays RecyclerView) -->
-        <LinearLayout
-            android:id="@+id/emptyStateLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:visibility="gone"
-            android:padding="32dp">
-
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:src="@drawable/ic_camera"
-                android:alpha="0.6"
-                android:layout_marginBottom="16dp" />
-
-            <TextView
-                android:id="@+id/emptyStateText"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/tank1Chip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/no_camera_streams"
-                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textStyle="bold"
-                android:gravity="center" />
+                android:text="Tank 1"
+                android:checked="true"
+                android:checkable="true"
+                app:chipStrokeWidth="2dp"
+                app:chipStrokeColor="@color/primary"
+                android:layout_marginEnd="8dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/addTankChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+ Add Tank"
+                android:checkable="false"
+                app:chipStrokeWidth="1dp"
+                app:chipStrokeColor="@color/primary" />
+
         </LinearLayout>
+    </HorizontalScrollView>
 
-        <!-- Loading Indicator (also overlays RecyclerView) -->
-        <ProgressBar
-            android:id="@+id/loadingIndicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone" />
-    </FrameLayout>
-
-    <!-- Molt Monitoring Card -->
-    <include
-        android:id="@+id/moltMonitoringCardInclude"
-        layout="@layout/layout_molt_monitoring_card"
+    <!-- Crab Details Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/crabDetailsCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp" />
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/white"
+        app:rippleColor="@color/primary">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <!-- Crab Icon -->
+            <TextView
+                android:id="@+id/crabIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🦀"
+                android:textSize="24sp"
+                android:layout_marginEnd="12dp" />
+
+            <!-- Crab Details Content -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Crab Name / Empty State Title -->
+                <TextView
+                    android:id="@+id/crabNameText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap to add crab details"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="@color/text_primary" />
+
+                <!-- Crab Details Subtitle (hidden when empty) -->
+                <TextView
+                    android:id="@+id/crabDetailsText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Placed: 2025-01-15  •  45.5g"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="2dp"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
+
+            <!-- Edit Hint / Arrow -->
+            <ImageView
+                android:id="@+id/editIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_edit"
+                android:contentDescription="Edit crab details"
+                app:tint="@color/text_secondary" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Stream Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="8dp">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Video Player Container -->
+            <FrameLayout
+                android:id="@+id/videoContainer"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/black"
+                app:layout_constraintDimensionRatio="16:9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <!-- ExoPlayer PlayerView -->
+
+                <!-- Loading Indicator -->
+                <androidx.media3.ui.PlayerView
+                    android:id="@+id/playerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/black"
+                    app:resize_mode="fit"
+                    app:show_buffering="when_playing"
+                    app:show_timeout="5000"
+                    app:surface_type="surface_view"
+                    app:use_controller="true" />
+
+                <ProgressBar
+                    android:id="@+id/loadingIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/white"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <!-- Connection Status Overlay -->
+                <TextView
+                    android:id="@+id/connectionStatusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="#80000000"
+                    android:padding="16dp"
+                    android:text="Connecting..."
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="@color/white"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <!-- Quality Badge (Top Right) -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/qualityBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="12dp"
+                    android:text="MQ"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    app:chipBackgroundColor="#80000000"
+                    app:chipMinHeight="32dp"
+                    app:chipStrokeWidth="0dp" />
+
+            </FrameLayout>
+
+            <!-- Status Badge Overlay (Bottom Left) -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/statusBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                android:text="Offline"
+                android:textColor="@color/white"
+                app:chipBackgroundColor="#80000000"
+                app:chipMinHeight="32dp"
+                app:chipStrokeWidth="0dp"
+                app:layout_constraintBottom_toBottomOf="@id/videoContainer"
+                app:layout_constraintStart_toStartOf="@id/videoContainer" />
+
+            <!-- Stream Info Section -->
+            <LinearLayout
+                android:id="@+id/streamInfoSection"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/videoContainer">
+
+                <!-- Stream Title -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/streamTitleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tank 001 - Top View"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textColor="@color/black"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/streamSubtitleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="RTSP Stream"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Play/Stop Button -->
+
+            <!-- Error Layout (Overlays entire card when error occurs) -->
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/playButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="220dp"
+                android:text="Play"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/blu"
+                app:icon="@android:drawable/ic_media_play"
+                app:iconTint="@color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <LinearLayout
+                android:id="@+id/errorLayout"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/white"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:visibility="gone">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_marginBottom="16dp"
+                    android:alpha="0.6"
+                    android:src="@drawable/ic_camera" />
+
+                <TextView
+                    android:id="@+id/errorMessageText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:gravity="center"
+                    android:text="Failed to connect to stream"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    tools:text="Network error: Unable to connect" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/retryButton"
+                    style="@style/Widget.Material3.Button.ElevatedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Retry Connection"
+                    android:textAllCaps="false"
+                    app:cornerRadius="8dp" />
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

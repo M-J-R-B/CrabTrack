@@ -5,24 +5,21 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import com.crabtrack.app.data.repository.AuthRepository
 import com.crabtrack.app.data.repository.TelemetryRepository
 import com.google.firebase.database.FirebaseDatabase
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import javax.inject.Inject
-import javax.inject.Singleton
 
 @HiltAndroidApp
 class CrabTrackApplication : Application() {
 
-    // Application-scoped coroutine for long-running operations
-    @Singleton
-    val applicationScope = CoroutineScope(SupervisorJob())
-
-    // Eagerly inject TelemetryRepository to start Firebase stream immediately
+    // Eagerly inject repositories to initialize them immediately
     @Inject
     lateinit var telemetryRepository: TelemetryRepository
+
+    @Inject
+    lateinit var authRepository: AuthRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -30,11 +27,14 @@ class CrabTrackApplication : Application() {
         // Initialize Firebase with enhanced logging
         android.util.Log.i("CrabTrackApp", "Application onCreate - Initializing Firebase")
 
-        // Force TelemetryRepository initialization to start Firebase stream immediately
-        // This is critical because Hilt singletons are lazy by default
-        android.util.Log.i("CrabTrackApp", "Forcing TelemetryRepository initialization...")
+        // Force repository initialization (Hilt singletons are lazy by default)
+        android.util.Log.i("CrabTrackApp", "Forcing repository initialization...")
         telemetryRepository.let {
             android.util.Log.i("CrabTrackApp", "TelemetryRepository initialized: ${it::class.simpleName}")
+        }
+        authRepository.let {
+            android.util.Log.i("CrabTrackApp", "AuthRepository initialized: ${it::class.simpleName}")
+            android.util.Log.i("CrabTrackApp", "Auth state listener is now active")
         }
 
         // Enable Firebase Realtime Database persistence for offline support
@@ -72,6 +72,10 @@ class CrabTrackApplication : Application() {
         }
 
         createNotificationChannels()
+
+        // Note: AlertMonitoringService will be started when user logs in
+        // (via NotificationCleanupManager.startAllNotifiers())
+        android.util.Log.i("CrabTrackApp", "Application initialized - ready for monitoring")
     }
     
     private fun createNotificationChannels() {

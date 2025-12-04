@@ -25,17 +25,17 @@
         app:cardCornerRadius="70dp"
         android:background="@color/white">
 
-        <!--        <EditText-->
-        <!--            android:layout_width="wrap_content"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:layout_marginStart="50dp"-->
-        <!--            android:layout_marginTop="30dp"-->
-        <!--            android:background="@color/white"-->
-        <!--            android:text="WELCOME"-->
-        <!--            android:textSize="30dp"-->
-        <!--            android:textStyle="bold">-->
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="50dp"
+            android:layout_marginTop="30dp"
+            android:background="@color/white"
+            android:text="WELCOME"
+            android:textSize="30dp"
+            android:textStyle="bold">
 
-        <!--        </EditText>-->
+                </EditText>
 
         <TextView
             android:layout_width="wrap_content"
@@ -43,7 +43,7 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="90dp"
             android:background="@color/white"
-            android:text="Username"
+            android:text="Email"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -52,13 +52,13 @@
             android:layout_height="60dp"
             android:layout_marginStart="60dp"
             android:layout_marginTop="110dp"
-            android:hint="Enter Username">
+            android:hint="Enter Email">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edit_text_username"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:inputType="text"/>
+                android:inputType="textEmailAddress"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView

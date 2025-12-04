@@ -1,14 +1,25 @@
+
 package com.crabtrack.app.ui.settings
 
-
-import android.R.attr.data
+import android.Manifest
+import android.app.Activity
+import com.crabtrack.app.data.model.FeedingReminder
+import com.crabtrack.app.ui.settings.adapter.SettingsFeedingReminderAdapter
 import android.app.AlarmManager
+import android.app.DatePickerDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,41 +27,53 @@ import android.widget.EditText
 import androidx.core.widget.addTextChangedListener
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.crabtrack.app.data.model.Thresholds
 import com.crabtrack.app.data.model.RecurrenceType
 import com.crabtrack.app.databinding.FragmentSettingsBinding
-import com.crabtrack.app.ui.settings.adapter.FeedingReminderAdapter
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
-import com.crabtrack.app.data.util.NetworkTypeDetector
-import com.crabtrack.app.data.util.DataUsageTracker
-import com.crabtrack.app.data.util.NetworkType
 import com.google.firebase.database.DatabaseReference
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
-import android.app.Activity
-import androidx.activity.result.contract.ActivityResultContracts
 import com.google.firebase.storage.FirebaseStorage
 import com.bumptech.glide.Glide
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.util.Base64
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import com.crabtrack.app.R
+import com.crabtrack.app.presentation.auth.AuthViewModel
+import com.google.android.material.button.MaterialButton
+import com.crabtrack.app.ui.settings.adapter.FeedingReminderAdapter
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.util.Calendar
 
-
+private var isEditingProfile = false
 
 @AndroidEntryPoint
 class SettingsFragment : Fragment() {
+
+    companion object {
+        private const val TAG = "SettingsFragment"
+    }
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
@@ -59,17 +82,11 @@ class SettingsFragment : Fragment() {
     private lateinit var database: DatabaseReference
 
     private val viewModel: SettingsViewModel by viewModels()
-    private var dispensingJob: kotlinx.coroutines.Job? = null
-    private lateinit var reminderAdapter: FeedingReminderAdapter
-
-    @Inject
-    lateinit var networkTypeDetector: NetworkTypeDetector
+    private var dispensingJob: Job? = null
+    private lateinit var reminderAdapter: SettingsFeedingReminderAdapter
 
     private lateinit var storage: FirebaseStorage
     private var imageUri: Uri? = null
-
-    @Inject
-    lateinit var dataUsageTracker: DataUsageTracker
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -113,21 +130,144 @@ class SettingsFragment : Fragment() {
                 }
             }
             .addOnFailureListener {
-                Snackbar.make(binding.root, "Upload failed: ${it.message}", Snackbar.LENGTH_SHORT).show()
+                showProfileSuccessDialog(
+                    title = "Upload Failed",
+                    message = "Your profile picture has not been uploaded!."
+                )
             }
     }
 
 
+    private fun showThresholdSuccessDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_success_profile, null)
+
+        val titleView = dialogView.findViewById<TextView>(R.id.text_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonOk = dialogView.findViewById<MaterialButton>(R.id.button_ok)
+
+        titleView.text = "Success!"
+        messageView.text = "Your inputs has been saved!"
+
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+            .setView(dialogView)
+            .create()
+
+        buttonOk.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
+    }
+
+
+    private fun showProfileSuccessDialog(
+        title: String = "Profile updated",
+        message: String = "Your profile changes have been saved successfully."
+    ) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_success_profile, null)
+
+        val dialog = MaterialAlertDialogBuilder(
+            requireContext(),
+            R.style.CrabTrack_AlertDialog   // or your existing CrabTrack_LogoutDialog
+        )
+            .setView(dialogView)
+            .create()
+
+        dialog.setCancelable(true)
+        dialog.setCanceledOnTouchOutside(true)
+
+        val textTitle = dialogView.findViewById<TextView>(R.id.text_title)
+        val textMessage = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonOk = dialogView.findViewById<MaterialButton>(R.id.button_ok)
+
+        textTitle.text = title
+        textMessage.text = message
+
+        buttonOk.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showDispenseSuccessDialog(
+        title: String = "Success!",
+        message: String = "Solution dispensed smoothly."
+    ) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_success_signup, null)
+
+        val titleView = dialogView.findViewById<TextView>(R.id.text_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonOk = dialogView.findViewById<MaterialButton>(R.id.button_ok)
+
+        titleView.text = title
+        messageView.text = message
+
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+            .setView(dialogView)
+            .create()
+
+        buttonOk.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
+    }
+
+    private fun showResetDefaultsSuccessDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_success_profile, null)
+
+        val titleView = dialogView.findViewById<TextView>(R.id.text_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonOk = dialogView.findViewById<MaterialButton>(R.id.button_ok)
+
+        titleView.text = "Defaults Restored"
+        messageView.text = "All threshold values have been reset to CrabTrack’s recommended safe ranges."
+
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+            .setView(dialogView)
+            .create()
+
+        buttonOk.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
+    }
+
+
+    private fun showDeleteReminderConfirm(
+        reminder: FeedingReminder,
+        onConfirm: () -> Unit
+    ) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_delete_reminder_confirm, null)
+
+        val titleView = dialogView.findViewById<TextView>(R.id.text_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonNo = dialogView.findViewById<MaterialButton>(R.id.button_confirm_no)
+        val buttonYes = dialogView.findViewById<MaterialButton>(R.id.button_confirm_yes)
+
+        titleView.text = "Delete reminder?"
+        messageView.text = "Are you sure you want to delete this reminder?\n\n${reminder.date} at ${reminder.time}"
+
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+            .setView(dialogView)
+            .create()
+
+        buttonNo.setOnClickListener { dialog.dismiss() }
+        buttonYes.setOnClickListener {
+            dialog.dismiss()
+            onConfirm()
+        }
+
+        dialog.show()
+    }
+
     private val pickImageLauncher = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+        ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val uri = result.data!!.data ?: return@registerForActivityResult
             val inputStream = requireContext().contentResolver.openInputStream(uri)
-            val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+            val bitmap = BitmapFactory.decodeStream(inputStream)
 
             // Show selected image immediately
             binding.imageProfile.setImageBitmap(bitmap)
+            binding.imageProfileEdit.setImageBitmap(bitmap)
 
             // Convert to Base64 string
             val base64String = bitmapToBase64(bitmap)
@@ -140,18 +280,16 @@ class SettingsFragment : Fragment() {
                     .child("profileImageBase64")
                     .setValue(base64String)
                     .addOnSuccessListener {
-                        com.google.android.material.snackbar.Snackbar.make(
-                            binding.root,
-                            "Profile picture updated!",
-                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
-                        ).show()
+                        showProfileSuccessDialog(
+                            title = "Profile updated",
+                            message = "Your profile picture has been updated."
+                        )
                     }
                     .addOnFailureListener {
-                        com.google.android.material.snackbar.Snackbar.make(
-                            binding.root,
-                            "Failed to save image: ${it.message}",
-                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
-                        ).show()
+                        showProfileSuccessDialog(
+                            title = "Failed to save Image",
+                            message = "Your profile picture has not been updated."
+                        )
                     }
             }
         }
@@ -159,6 +297,19 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Log.d(TAG, "SettingsFragment onViewCreated")
+
+        binding.profileDetailsContent.visibility = View.GONE
+
+        binding.profileDetailsContent.visibility = View.GONE
+
+        // Lock edit UI by default
+        binding.editProfileNameInput.isEnabled = false
+        binding.buttonProfileSave.isEnabled = false
+        binding.buttonProfileSave.alpha = 0.5f
+
+        binding.imageProfileEdit.isClickable = false
+        binding.imageProfileEdit.isFocusable = false
 
         // ✅ 1. Create notification channel (required once)
         createNotificationChannel()
@@ -169,15 +320,16 @@ class SettingsFragment : Fragment() {
         // ✅ 3. Initialize all other features
         setupTextWatchers()
         setupObservers()
+        setupSwipeRefresh()
         setupClickListeners()
         setupInputValidation()
         setupRemindersRecyclerView()
-        setupDataUsageMonitoring()
 
         // ✅ Initialize Firebase references
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance().getReference("users")
 
+        // ✅ Load user data from Firebase
         // ✅ Load user data from Firebase
         val currentUser = auth.currentUser
         if (currentUser != null) {
@@ -188,26 +340,39 @@ class SettingsFragment : Fragment() {
                     val username = snapshot.child("username").value?.toString() ?: "Unknown User"
                     val email = snapshot.child("email").value?.toString() ?: currentUser.email ?: "No Email"
                     val role = snapshot.child("role").value?.toString() ?: "Farmer"
-                    val profileImageBase64 = snapshot.child("profileImageBase64").value?.toString()
-                    val dailyLimit = snapshot.child("dailyLimitMB").value?.toString()
+
+                    val profileImageBase64 = snapshot.child("profileImageBase64").getValue(String::class.java)
+                    val profileImageUrl = snapshot.child("profileImage").getValue(String::class.java)
 
                     // ✅ Set user info
                     binding.textProfileName.text = username
                     binding.textProfileEmail.text = email
                     binding.textProfileRole.text = role
-                    if (!dailyLimit.isNullOrEmpty()) {
-                        binding.dailyLimitInput.setText(dailyLimit)
-                    }
-                    // ✅ Decode and display Base64 image if it exists
+
+                    // ✅ 1) Try Base64 first
                     if (!profileImageBase64.isNullOrEmpty()) {
                         try {
-                            val decodedBytes = android.util.Base64.decode(profileImageBase64, android.util.Base64.DEFAULT)
-                            val bitmap = android.graphics.BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+                            val decodedBytes = Base64.decode(profileImageBase64, Base64.DEFAULT)
+                            val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
                             binding.imageProfile.setImageBitmap(bitmap)
+                            binding.imageProfileEdit.setImageBitmap(bitmap)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
                     }
+                    // ✅ 2) If no Base64, try URL from Firebase Storage
+                    else if (!profileImageUrl.isNullOrEmpty()) {
+                        Glide.with(this)
+                            .load(profileImageUrl)
+                            .circleCrop()
+                            .into(binding.imageProfile)
+
+                        Glide.with(this)
+                            .load(profileImageUrl)
+                            .circleCrop()
+                            .into(binding.imageProfileEdit)
+                    }
+                    // ✅ 3) Else → leave default icon
                 } else {
                     binding.textProfileName.text = "User not found"
                     binding.textProfileEmail.text = currentUser.email ?: "No Email"
@@ -223,55 +388,118 @@ class SettingsFragment : Fragment() {
             binding.textProfileEmail.text = "Not logged in"
             binding.textProfileRole.text = ""
         }
+    }
 
-        // ✅ Tap image to pick a new one
-        binding.imageProfile.setOnClickListener {
+    private fun enterProfileEditMode() {
+        isEditingProfile = true
+
+        // Enable name field + save button
+        binding.editProfileNameInput.isEnabled = true
+        binding.buttonProfileSave.isEnabled = true
+        binding.buttonProfileSave.alpha = 1f
+
+        // Only now make the edit image clickable
+        binding.imageProfileEdit.isClickable = true
+        binding.imageProfileEdit.isFocusable = true
+
+        binding.imageProfileEdit.setOnClickListener {
+            // Only act if actually in edit mode
+            if (!isEditingProfile) return@setOnClickListener
+
             val intent = Intent(Intent.ACTION_PICK).apply {
                 type = "image/*"
             }
             pickImageLauncher.launch(intent)
         }
+
+        // Pre-fill name in edit field from header name
+        binding.editProfileNameInput.setText(binding.textProfileName.text)
     }
 
-    private fun bitmapToBase64(bitmap: android.graphics.Bitmap): String {
-        val outputStream = java.io.ByteArrayOutputStream()
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, outputStream)
+    private fun showReminderSuccessDialog(
+        title: String = "Reminder",
+        message: String
+    ) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_success_profile, null)
+
+        val dialog = MaterialAlertDialogBuilder(
+            requireContext(),
+            R.style.CrabTrack_AlertDialog
+        )
+            .setView(dialogView)
+            .create()
+
+        dialog.setCancelable(true)
+        dialog.setCanceledOnTouchOutside(true)
+
+        val textTitle = dialogView.findViewById<TextView>(R.id.text_title)
+        val textMessage = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonOk = dialogView.findViewById<MaterialButton>(R.id.button_ok)
+
+        textTitle.text = title
+        textMessage.text = message
+
+        buttonOk.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun exitProfileEditMode() {
+        isEditingProfile = false
+        binding.editProfileNameInput.isEnabled = false
+        binding.buttonProfileSave.isEnabled = false
+        binding.buttonProfileSave.alpha = 0.5f
+        binding.imageProfileEdit.isClickable = false
+        binding.imageProfileEdit.isFocusable = false
+    }
+
+
+    private fun bitmapToBase64(bitmap: Bitmap): String {
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
         val byteArray = outputStream.toByteArray()
-        return android.util.Base64.encodeToString(byteArray, android.util.Base64.DEFAULT)
+        return Base64.encodeToString(byteArray, Base64.DEFAULT)
     }
     // ------------------------------------------------------------
 // Notification setup helpers
 // ------------------------------------------------------------
 
     private fun createNotificationChannel() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val channel = android.app.NotificationChannel(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
                 "feeding_channel", // must match the one used in FeedingAlarmReceiver
                 "Feeding Reminders",
-                android.app.NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifies you when it's time to feed your crabs"
             }
 
             val manager =
-                requireContext().getSystemService(android.app.NotificationManager::class.java)
+                requireContext().getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
     }
 
     private fun ensureNotificationPermission() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = requireContext().checkSelfPermission(
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
 
             if (!granted) {
                 requestPermissions(
-                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                     101
                 )
             }
         }
+    }
+
+    private fun toggleProfileSection() {
+        val content = binding.profileDetailsContent
+        content.visibility = if (content.visibility == View.VISIBLE) View.GONE else View.VISIBLE
     }
 
 
@@ -312,6 +540,7 @@ class SettingsFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collect { state ->
+                        Log.d(TAG, "UI State updated: isLoading=${state.isLoading}, thresholds=${state.thresholds?.pHMin}")
                         updateUI(state)
                     }
                 }
@@ -350,20 +579,50 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun setupRemindersRecyclerView() {
-        reminderAdapter = FeedingReminderAdapter { reminder ->
-            // Show confirmation dialog before deleting
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Delete Reminder")
-                .setMessage("Are you sure you want to delete this reminder?")
-                .setPositiveButton("Delete") { _, _ ->
-                    viewModel.deleteReminder(reminder)
-                    // Cancel the alarm
-                    cancelAlarm(reminder.id)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshThresholdsFromFirebase()
         }
+    }
+
+    private fun setupRemindersRecyclerView() {
+        reminderAdapter = SettingsFeedingReminderAdapter(
+            onDeleteClick = { reminder ->
+
+                // 🔹 Inflate your custom delete dialog layout
+                val dialogView = layoutInflater.inflate(
+                    R.layout.dialog_delete_reminder_confirm,  // <-- use your XML here
+                    null
+                )
+
+                val titleView = dialogView.findViewById<TextView>(R.id.text_title)
+                val messageView = dialogView.findViewById<TextView>(R.id.text_message)
+                val buttonNo = dialogView.findViewById<MaterialButton>(R.id.button_confirm_no)
+                val buttonYes = dialogView.findViewById<MaterialButton>(R.id.button_confirm_yes)
+
+                // Optional: customize text if you want
+                titleView.text = "Delete reminder?"
+                messageView.text = "Are you sure you want to delete this reminder?"
+
+                val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+                    .setView(dialogView)
+                    .create()
+
+                buttonNo.setOnClickListener {
+                    dialog.dismiss()
+                }
+
+                buttonYes.setOnClickListener {
+                    // ✅ same behavior as before
+                    viewModel.deleteReminder(reminder)
+                    cancelAlarm(reminder.id)
+                    dialog.dismiss()
+                }
+
+                dialog.show()
+            },
+            readOnly = false
+        )
 
         binding.remindersRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -371,7 +630,9 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun updateRemindersList(reminders: List<com.crabtrack.app.data.model.FeedingReminder>) {
+
+
+    private fun updateRemindersList(reminders: List<FeedingReminder>) {
         reminderAdapter.submitList(reminders)
 
         // Show/hide empty state
@@ -386,11 +647,11 @@ class SettingsFragment : Fragment() {
 
     private fun cancelAlarm(reminderId: String) {
         val intent = Intent(requireContext(), FeedingAlarmReceiver::class.java)
-        val pendingIntent = android.app.PendingIntent.getBroadcast(
+        val pendingIntent = PendingIntent.getBroadcast(
             requireContext(),
             reminderId.hashCode(),
             intent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -398,6 +659,9 @@ class SettingsFragment : Fragment() {
     }
 
     private fun updateUI(state: SettingsUiState) {
+        // Update swipe refresh state
+        binding.swipeRefreshLayout.isRefreshing = state.isRefreshing
+
         // Show/hide loading
         binding.progressIndicator.visibility = if (state.isLoading || state.isSaving) View.VISIBLE else View.GONE
 
@@ -537,7 +801,8 @@ class SettingsFragment : Fragment() {
     private fun updateSaveState(saveState: SaveState) {
         when (saveState) {
             SaveState.Idle -> {
-                // Normal state
+                binding.buttonSave.isEnabled = true
+                binding.buttonSave.text = "Save"
             }
             SaveState.Saving -> {
                 binding.buttonSave.isEnabled = false
@@ -546,14 +811,54 @@ class SettingsFragment : Fragment() {
             SaveState.Success -> {
                 binding.buttonSave.isEnabled = true
                 binding.buttonSave.text = "Save"
-                Snackbar.make(binding.root, "Settings saved successfully!", Snackbar.LENGTH_SHORT).show()
+
+                showProfileSuccessDialog(
+                    title = "Water quality saved",
+                    message = "Your water quality thresholds have been saved successfully."
+                )
+
+                viewModel.resetSaveState()
             }
             SaveState.Error -> {
                 binding.buttonSave.isEnabled = true
                 binding.buttonSave.text = "Save"
+
+                // 👇 Check if this is a validation error (invalid user input)
+                val uiState = viewModel.uiState.value
+                val isValidationError =
+                    uiState.validationErrors.isNotEmpty() ||
+                            uiState.errorMessage?.contains("Invalid input", ignoreCase = true) == true ||
+                            uiState.errorMessage?.contains("Please fill all fields", ignoreCase = true) == true
+
+                if (isValidationError) {
+                    showProfileSuccessDialog(
+                        title = "Invalid Input!",
+                        message = """
+                        Please check your values:
+                        
+                        • All fields must be filled
+                        • Use numbers only (no letters or symbols)
+                        • Minimum must be **less than** maximum
+                        
+                        Example:
+                        • pH Min: 7.0, pH Max: 8.5
+                        • Temp Min: 22, Temp Max: 28
+                    """.trimIndent()
+                    )
+                } else if (uiState.errorMessage != null) {
+                    // other errors like Firebase failure
+                    showProfileSuccessDialog(
+                        title = "Save failed",
+                        message = uiState.errorMessage ?: "Something went wrong while saving your thresholds."
+                    )
+                }
+
+                viewModel.resetSaveState()
             }
         }
     }
+
+
 
     private fun dispenseWithRelay(volumeMl: Double) {
         // Cancel any ongoing dispensing operation
@@ -571,8 +876,8 @@ class SettingsFragment : Fragment() {
 
         // Disable volume input and update button state
         binding.mlPh.isEnabled = false
-        binding.buttonPhDispense.backgroundTintList = android.content.res.ColorStateList.valueOf(
-            android.graphics.Color.parseColor("#FF0000") // Red for cancel
+        binding.buttonPhDispense.backgroundTintList = ColorStateList.valueOf(
+            Color.parseColor("#FF0000") // Red for cancel
         )
 
         // Start dispensing
@@ -584,7 +889,7 @@ class SettingsFragment : Fragment() {
                 // Countdown timer
                 for (secondsRemaining in durationSeconds downTo 1) {
                     binding.buttonPhDispense.text = "Cancel (${secondsRemaining}s remaining)"
-                    kotlinx.coroutines.delay(1000)
+                    delay(1000)
                 }
 
                 // Turn relay OFF
@@ -592,35 +897,41 @@ class SettingsFragment : Fragment() {
 
                 // Show success message
                 binding.buttonPhDispense.text = "Dispense Solution"
-                binding.buttonPhDispense.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    requireContext().getColor(com.crabtrack.app.R.color.blu)
+                binding.buttonPhDispense.backgroundTintList = ColorStateList.valueOf(
+                    requireContext().getColor(R.color.blu)
                 )
                 binding.mlPh.isEnabled = true
 
-                Snackbar.make(binding.root, "Dispensed ${volumeMl}ml successfully", Snackbar.LENGTH_SHORT).show()
+                showDispenseSuccessDialog(
+                    title = "Success!",
+                    message = "Dispensed ${volumeMl}ml smoothly."
+                )
 
-            } catch (e: kotlinx.coroutines.CancellationException) {
+            } catch (e: CancellationException) {
                 // Dispensing was cancelled - use NonCancellable to ensure cleanup completes
-                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                withContext(NonCancellable) {
                     relayRef.setValue(0).await()
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         binding.buttonPhDispense.text = "Dispense Solution"
-                        binding.buttonPhDispense.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                            requireContext().getColor(com.crabtrack.app.R.color.blu)
+                        binding.buttonPhDispense.backgroundTintList = ColorStateList.valueOf(
+                            requireContext().getColor(R.color.blu)
                         )
                         binding.mlPh.isEnabled = true
                         binding.mlPh.text?.clear() // Clear volume field to force new input
-                        Snackbar.make(binding.root, "Dispensing cancelled", Snackbar.LENGTH_SHORT).show()
+                        showProfileSuccessDialog(
+                            title = "Dispense Cancelled",
+                            message = "The solution will not be Dispensed"
+                        )
                     }
                 }
             } catch (e: Exception) {
                 // Error occurred - use NonCancellable to ensure cleanup completes
-                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                withContext(NonCancellable) {
                     relayRef.setValue(0).await()
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         binding.buttonPhDispense.text = "Dispense Solution"
-                        binding.buttonPhDispense.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                            requireContext().getColor(com.crabtrack.app.R.color.blu)
+                        binding.buttonPhDispense.backgroundTintList = ColorStateList.valueOf(
+                            requireContext().getColor(R.color.blu)
                         )
                         binding.mlPh.isEnabled = true
                         Snackbar.make(binding.root, "Error: ${e.message}", Snackbar.LENGTH_LONG).show()
@@ -640,13 +951,82 @@ class SettingsFragment : Fragment() {
 
 
     private fun setupClickListeners() {
+
+        // Header tap: just expand/collapse, no edit mode
+        binding.profileHeaderCard.setOnClickListener {
+            toggleProfileSection()
+        }
+
+// Edit icon: expand + enable edit mode
+        // Header tap: just expand/collapse, no edit mode
+        binding.profileHeaderCard.setOnClickListener {
+            toggleProfileSection()
+        }
+
+// Edit icon: toggle the inline edit card
+        binding.buttonEditProfile.setOnClickListener {
+            val content = binding.profileDetailsContent
+            if (content.visibility == View.VISIBLE) {
+                content.visibility = View.GONE
+                exitProfileEditMode()
+            } else {
+                content.visibility = View.VISIBLE
+                enterProfileEditMode()
+            }
+        }
+
+
+        binding.buttonProfileSave.setOnClickListener {
+            val newName = binding.editProfileNameInput.text.toString().trim()
+            val user = FirebaseAuth.getInstance().currentUser ?: return@setOnClickListener
+
+            if (newName.isEmpty()) {
+                showProfileSuccessDialog(
+                    title = "Invalid Input!",
+                    message = "Name cannot be Empty"
+                )
+                return@setOnClickListener
+            }
+
+            FirebaseDatabase.getInstance().getReference("users")
+                .child(user.uid)
+                .child("username")
+                .setValue(newName)
+                .addOnSuccessListener {
+                    // Update header UI
+                    binding.textProfileName.text = newName
+
+                    // Optional: lock editing again
+                    isEditingProfile = false
+                    binding.editProfileNameInput.isEnabled = false
+                    binding.buttonProfileSave.isEnabled = false
+                    binding.buttonProfileSave.alpha = 0.5f
+                    binding.imageProfileEdit.isClickable = false
+                    binding.imageProfileEdit.isFocusable = false
+                    binding.profileDetailsContent.visibility = View.GONE   // 👈 collapse after save
+
+                    // You already have a success dialog for profile
+                    showProfileSuccessDialog(
+                        title = "Profile updated",
+                        message = "Your profile changes have been saved successfully."
+                    )
+                }
+                .addOnFailureListener {
+                    showProfileSuccessDialog(
+                        title = "Failed to Update Picture",
+                        message = "Your profile picture has not been updated."
+                    )                }
+        }
+
         binding.buttonSave.setOnClickListener {
             viewModel.saveThresholds()
         }
 
         binding.buttonResetDefaults.setOnClickListener {
             viewModel.resetToDefaults()
+            showResetDefaultsSuccessDialog()
         }
+
 
         // Section expand/collapse handlers
         binding.waterQualityHeader.setOnClickListener {
@@ -661,21 +1041,38 @@ class SettingsFragment : Fragment() {
             toggleFeedingReminder()
         }
 
-        binding.advancedSettingsHeader.setOnClickListener {
-            toggleAdvancedSettings()
-        }
 
         binding.buttonLogout.setOnClickListener {
-            // Clear any saved session or data if needed here later
+            val dialogView = layoutInflater.inflate(R.layout.dialog_logout_confirm, null)
 
-            // Navigate to the login screen
-            val navController = requireActivity()
-                .supportFragmentManager
-                .findFragmentById(com.crabtrack.app.R.id.nav_host_fragment)
-                ?.findNavController()
+            val dialog = MaterialAlertDialogBuilder(
+                requireContext(),
+                R.style.CrabTrack_LogoutDialog   // or remove this line if you haven't created the style yet
+            )
+                .setView(dialogView)
+                .create()
 
-            navController?.navigate(com.crabtrack.app.R.id.action_global_loginFragment)
+            dialog.setCancelable(true)
+            dialog.setCanceledOnTouchOutside(true)
+
+            val buttonYes = dialogView.findViewById<MaterialButton>(R.id.button_confirm_yes)
+            val buttonNo = dialogView.findViewById<MaterialButton>(R.id.button_confirm_no)
+
+            buttonYes.setOnClickListener {
+                val authViewModel: AuthViewModel by activityViewModels()
+                authViewModel.logout()
+                dialog.dismiss()
+            }
+
+            buttonNo.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            dialog.show()
         }
+
+
+
 
         binding.buttonPhDispense.setOnClickListener {
             // If currently dispensing, cancel it
@@ -689,79 +1086,51 @@ class SettingsFragment : Fragment() {
                     if (ml != null && ml > 0) {
                         dispenseWithRelay(ml)
                     } else {
-                        Snackbar.make(binding.root, "Invalid volume. Please enter a positive number.", Snackbar.LENGTH_SHORT).show()
+                        showProfileSuccessDialog(
+                            title = "Invalid Volume",
+                            message = "Please enter a positive number."
+                        )
                     }
                 } else {
-                    Snackbar.make(binding.root, "Please enter volume in ml", Snackbar.LENGTH_SHORT).show()
+                    showProfileSuccessDialog(
+                        title = "Invalid Input!",
+                        message = "Please Enter Volume in ml"
+                    )
                 }
             }
         }
 
         // Feeding Reminder - Date & Time pickers
         binding.feedingDateInput.setOnClickListener {
-            val calendar = java.util.Calendar.getInstance()
-            val datePicker = android.app.DatePickerDialog(
+            val calendar = Calendar.getInstance()
+            val datePicker = DatePickerDialog(
                 requireContext(),
                 { _, year, month, dayOfMonth ->
                     val selectedDate = "%04d-%02d-%02d".format(year, month + 1, dayOfMonth)
                     binding.feedingDateInput.setText(selectedDate)
                 },
-                calendar.get(java.util.Calendar.YEAR),
-                calendar.get(java.util.Calendar.MONTH),
-                calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
             )
             datePicker.show()
         }
 
         // ✅ When edit icon is clicked → show dialog to edit name or change photo
         // ✅ Handle edit name button
-        binding.buttonEditProfile.setOnClickListener {
-            val dialogView = layoutInflater.inflate(com.crabtrack.app.R.layout.dialog_edit_profile, null)
-            val editName = dialogView.findViewById<EditText>(com.crabtrack.app.R.id.edit_profile_name)
-            editName.setText(binding.textProfileName.text)
-
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Edit Name")
-                .setView(dialogView)
-                .setPositiveButton("Save") { _, _ ->
-                    val newName = editName.text.toString().trim()
-                    val user = FirebaseAuth.getInstance().currentUser ?: return@setPositiveButton
-
-                    if (newName.isNotEmpty()) {
-                        // ✅ Update Firebase
-                        FirebaseDatabase.getInstance().getReference("users")
-                            .child(user.uid)
-                            .child("username")
-                            .setValue(newName)
-                            .addOnSuccessListener {
-                                // ✅ Update UI instantly
-                                binding.textProfileName.text = newName
-                                Snackbar.make(binding.root, "Name updated successfully!", Snackbar.LENGTH_SHORT).show()
-                            }
-                            .addOnFailureListener {
-                                Snackbar.make(binding.root, "Failed to update name: ${it.message}", Snackbar.LENGTH_SHORT).show()
-                            }
-                    } else {
-                        Snackbar.make(binding.root, "Name cannot be empty.", Snackbar.LENGTH_SHORT).show()
-                    }
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-
 
 
 
         binding.feedingTimeInput.setOnClickListener {
-            val calendar = java.util.Calendar.getInstance()
-            val timePicker = android.app.TimePickerDialog(
+            val calendar = Calendar.getInstance()
+            val timePicker = TimePickerDialog(
                 requireContext(),
                 { _, hourOfDay, minute ->
                     val selectedTime = String.format("%02d:%02d", hourOfDay, minute)
                     binding.feedingTimeInput.setText(selectedTime)
                 },
-                calendar.get(java.util.Calendar.HOUR_OF_DAY),
-                calendar.get(java.util.Calendar.MINUTE),
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
                 true
             )
             timePicker.show()
@@ -772,138 +1141,191 @@ class SettingsFragment : Fragment() {
             val time = binding.feedingTimeInput.text.toString()
 
             if (date.isBlank() || time.isBlank()) {
-                Snackbar.make(binding.root, "Please select both date and time.", Snackbar.LENGTH_SHORT).show()
+                showProfileSuccessDialog(
+                    title = "Invalid Input!",
+                    message = "Please select both Date and Time"
+                )
                 return@setOnClickListener
             }
 
-            val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            val user = FirebaseAuth.getInstance().currentUser
             if (user == null) {
-                Snackbar.make(binding.root, "User not logged in.", Snackbar.LENGTH_SHORT).show()
+                showProfileSuccessDialog(
+                    title = "Invalid Login",
+                    message = "User not Logged In"
+                )
                 return@setOnClickListener
             }
 
-            // Get selected recurrence type
+            // ✅ Recurrence (One-time / Daily / Weekly)
             val recurrenceType = when (binding.recurrenceRadioGroup.checkedRadioButtonId) {
                 binding.radioDaily.id -> RecurrenceType.DAILY
                 binding.radioWeekly.id -> RecurrenceType.WEEKLY
                 else -> RecurrenceType.NONE
             }
 
-            // ✅ Parse the date and time into a Calendar object
-            val dateParts = date.split("-") // yyyy-MM-dd
-            val timeParts = time.split(":") // HH:mm
+            // ✅ Action type (Feed / Clean)
+            val actionType = when (binding.actionRadioGroup.checkedRadioButtonId) {
+                binding.radioFeed.id -> "FEED"
+                binding.radioClean.id -> "CLEAN"
+                else -> "FEED"
+            }
+
+            // ✅ Parse date + time
+            val dateParts = date.split("-")   // yyyy-MM-dd
+            val timeParts = time.split(":")   // HH:mm
 
             if (dateParts.size != 3 || timeParts.size != 2) {
-                Snackbar.make(binding.root, "Invalid date or time format.", Snackbar.LENGTH_SHORT).show()
+                showProfileSuccessDialog(
+                    title = "Invalid Input!",
+                    message = "Invalid Date or Time Input"
+                )
                 return@setOnClickListener
             }
 
             val year = dateParts[0].toInt()
-            val month = dateParts[1].toInt() - 1 // Calendar months are 0-indexed
+            val month = dateParts[1].toInt() - 1   // 0-based
             val day = dateParts[2].toInt()
             val hour = timeParts[0].toInt()
             val minute = timeParts[1].toInt()
 
-            val calendar = java.util.Calendar.getInstance().apply {
+            val calendar = Calendar.getInstance().apply {
                 set(year, month, day, hour, minute, 0)
             }
 
             val triggerTime = calendar.timeInMillis
             if (triggerTime <= System.currentTimeMillis()) {
-                Snackbar.make(binding.root, "Please select a future time.", Snackbar.LENGTH_SHORT).show()
+                showProfileSuccessDialog(
+                    title = "Invalid Input!",
+                    message = "Please select a Future Time"
+                )
                 return@setOnClickListener
             }
 
-            // ✅ Save reminder to Firebase
-            val reminderData = mapOf(
-                "date" to date,
-                "time" to time,
-                "timestamp" to triggerTime,
-                "recurrence" to recurrenceType.name,
-                "status" to "scheduled",
-                "createdAt" to System.currentTimeMillis()
-            )
+            // ✅ Show your custom confirm dialog BEFORE saving
+            showSaveScheduleConfirm(date, time, recurrenceType, actionType) {
 
-            val remindersRef = com.google.firebase.database.FirebaseDatabase.getInstance()
-                .getReference("users")
-                .child(user.uid)
-                .child("feeding_reminders")
-                .push()
+                val reminderData = mapOf(
+                    "date" to date,
+                    "time" to time,
+                    "timestamp" to triggerTime,
+                    "recurrence" to recurrenceType.name,
+                    "actionType" to actionType,
+                    "status" to "scheduled",
+                    "createdAt" to System.currentTimeMillis()
+                )
 
-            val reminderId = remindersRef.key ?: return@setOnClickListener
+                val remindersRef = FirebaseDatabase.getInstance()
+                    .getReference("users")
+                    .child(user.uid)
+                    .child("feeding_reminders")
+                    .push()
 
-            remindersRef.setValue(reminderData)
-                .addOnSuccessListener {
-                    // ✅ Schedule local alarm notification
-                    val intent = Intent(requireContext(), FeedingAlarmReceiver::class.java).apply {
-                        putExtra("reminder_id", reminderId)
-                        putExtra("recurrence_type", recurrenceType.name)
-                        putExtra("timestamp", triggerTime)
-                    }
+                val reminderId = remindersRef.key ?: return@showSaveScheduleConfirm
 
-                    val pendingIntent = android.app.PendingIntent.getBroadcast(
-                        requireContext(),
-                        reminderId.hashCode(),
-                        intent,
-                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                    )
+                remindersRef.setValue(reminderData)
+                    .addOnSuccessListener {
+                        val intent = Intent(requireContext(), FeedingAlarmReceiver::class.java).apply {
+                            putExtra("reminder_id", reminderId)
+                            putExtra("recurrence_type", recurrenceType.name)
+                            putExtra("timestamp", triggerTime)
+                            putExtra("action_type", actionType)
+                        }
 
-                    val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                        val pendingIntent = PendingIntent.getBroadcast(
+                            requireContext(),
+                            reminderId.hashCode(),
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
 
-                    try {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            if (alarmManager.canScheduleExactAlarms()) {
+                        val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                if (alarmManager.canScheduleExactAlarms()) {
+                                    alarmManager.setExactAndAllowWhileIdle(
+                                        AlarmManager.RTC_WAKEUP,
+                                        triggerTime,
+                                        pendingIntent
+                                    )
+                                } else {
+                                    val settingsIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                        data = Uri.parse("package:${requireContext().packageName}")
+                                    }
+                                    startActivity(settingsIntent)
+                                    showProfileSuccessDialog(
+                                        title = "Invalid Input!",
+                                        message = "Please allow exact alarm for CrabTrack"
+                                    )
+                                    return@addOnSuccessListener
+                                }
+                            } else {
                                 alarmManager.setExactAndAllowWhileIdle(
                                     AlarmManager.RTC_WAKEUP,
                                     triggerTime,
                                     pendingIntent
                                 )
-                            } else {
-                                // ✅ Ask user to allow exact alarms
-                                val settingsIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                                    data = Uri.parse("package:${requireContext().packageName}")
-                                }
-                                startActivity(settingsIntent)
-                                Snackbar.make(
-                                    binding.root,
-                                    "Please allow exact alarms for CrabTrack, then try again.",
-                                    Snackbar.LENGTH_LONG
-                                ).show()
-                                return@addOnSuccessListener
                             }
-                        } else {
-                            // ✅ Older Android versions: safe to schedule directly
-                            alarmManager.setExactAndAllowWhileIdle(
-                                AlarmManager.RTC_WAKEUP,
-                                triggerTime,
-                                pendingIntent
+
+                            // Clear fields + reset radios
+                            binding.feedingDateInput.text?.clear()
+                            binding.feedingTimeInput.text?.clear()
+                            binding.recurrenceRadioGroup.check(binding.radioOneTime.id)
+                            binding.actionRadioGroup.check(binding.radioFeed.id)
+
+
+                            val recurrenceText = when (recurrenceType) {
+                                RecurrenceType.DAILY -> "Daily"
+                                RecurrenceType.WEEKLY -> "Weekly"
+                                RecurrenceType.NONE -> "One-time"
+                            }
+                            val actionLabelSnack = if (actionType == "CLEAN") "cleaning" else "feeding"
+
+                            showReminderSuccessDialog(
+                                title = if (actionType == "CLEAN") "Cleaning reminder saved"
+                                else "Feeding reminder saved",
+                                message = "Reminder set for $date at $time $recurrenceText."
+                            )
+
+                            viewModel.loadFeedingReminders()
+
+                            val newReminder = FeedingReminder(
+                                id = reminderId,
+                                date = date,
+                                time = time,
+                                timestamp = triggerTime,
+                                recurrence = recurrenceType,
+                                status = "scheduled",
+                                createdAt = System.currentTimeMillis(),
+                                actionType = actionType
+                            )
+
+                            val updatedList = reminderAdapter.currentList.toMutableList().apply {
+                                add(0, newReminder)
+                            }
+                            reminderAdapter.submitList(updatedList)
+
+                            binding.emptyRemindersMessage.visibility = View.GONE
+                            binding.remindersRecyclerView.visibility = View.VISIBLE
+                            // 🔹🔹 REAL-TIME UPDATE ENDS HERE 🔹🔹
+
+                        } catch (se: SecurityException) {
+                            showProfileSuccessDialog(
+                                title = "Invalid Input!",
+                                message = "Exact alarm permission not granted, Enable it in Settings"
                             )
                         }
-
-                        // Clear input fields
-                        binding.feedingDateInput.text?.clear()
-                        binding.feedingTimeInput.text?.clear()
-                        binding.recurrenceRadioGroup.check(binding.radioOneTime.id)
-
-                        val recurrenceText = when (recurrenceType) {
-                            RecurrenceType.DAILY -> " (Daily)"
-                            RecurrenceType.WEEKLY -> " (Weekly)"
-                            RecurrenceType.NONE -> ""
-                        }
-                        Snackbar.make(binding.root, "Reminder set for $date at $time$recurrenceText", Snackbar.LENGTH_SHORT).show()
-
-                    } catch (se: SecurityException) {
-                        Snackbar.make(
-                            binding.root,
-                            "Exact alarm permission not granted. Enable it in Settings.",
-                            Snackbar.LENGTH_LONG
-                        ).show()
                     }
-                }
-                .addOnFailureListener {
-                    Snackbar.make(binding.root, "Failed to set reminder: ${it.message}", Snackbar.LENGTH_LONG).show()
-                }
+                    .addOnFailureListener {
+                        showProfileSuccessDialog(
+                            title = "Invalid ",
+                            message = "Failed to Set Reminder"
+                        )
+                    }
+            }
         }
+
 
 
     }
@@ -921,130 +1343,6 @@ class SettingsFragment : Fragment() {
             }
         }
     }
-
-    private fun setupDataUsageMonitoring() {
-        // Observe network type changes
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    networkTypeDetector.observeNetworkType().collect { networkType ->
-                        updateNetworkTypeUI(networkType)
-                    }
-                }
-
-                launch {
-                    dataUsageTracker.getUsageStats().collect { stats ->
-                        updateDataUsageUI(stats)
-                    }
-                }
-
-                launch {
-                    dataUsageTracker.isDataSaverEnabled().collect { enabled ->
-                        binding.switchDataSaver.isChecked = enabled
-                    }
-                }
-            }
-        }
-
-        // Data Saver toggle listener
-        binding.switchDataSaver.setOnCheckedChangeListener { _, isChecked ->
-            viewLifecycleOwner.lifecycleScope.launch {
-                dataUsageTracker.setDataSaverMode(isChecked)
-                val message = if (isChecked) {
-                    "Data Saver Mode enabled - Camera quality reduced, MQTT intervals increased"
-                } else {
-                    "Data Saver Mode disabled"
-                }
-                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-            }
-        }
-
-        // Set Daily Limit button listener
-        binding.buttonSetLimit.setOnClickListener {
-            val limitText = binding.dailyLimitInput.text.toString().trim()
-            val user = FirebaseAuth.getInstance().currentUser
-
-            // 🧩 1. Check if field is empty
-            if (limitText.isEmpty()) {
-                binding.dailyLimitInput.error = "This field cannot be empty"
-                Snackbar.make(binding.root, "Please enter your daily data limit.", Snackbar.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 🧩 2. Convert to number safely
-            val limitMB = limitText.toLongOrNull()
-            if (limitMB == null) {
-                binding.dailyLimitInput.error = "Please enter a valid number"
-                Snackbar.make(binding.root, "Invalid number format. Please enter digits only.", Snackbar.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 🧩 3. Validate range (1–10,000 MB for sanity)
-            if (limitMB <= 0 || limitMB > 10000) {
-                binding.dailyLimitInput.error = "Enter a value between 1 and 10,000 MB"
-                Snackbar.make(binding.root, "Please enter a limit between 1 MB and 10,000 MB.", Snackbar.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 🧩 4. Clear error if all is good
-            binding.dailyLimitInput.error = null
-
-            // 🧩 5. Save to Firebase Database
-            if (user != null) {
-                val ref = FirebaseDatabase.getInstance().getReference("users").child(user.uid)
-                ref.child("dailyLimitMB").setValue(limitMB)
-                    .addOnSuccessListener {
-                        // ✅ Also save locally via DataStore
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            dataUsageTracker.setDailyLimit(limitMB)
-                        }
-
-                        // ✅ Keep the input text (don’t clear)
-                        Snackbar.make(binding.root, "Daily limit saved: $limitMB MB", Snackbar.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener {
-                        Snackbar.make(binding.root, "Failed to save limit: ${it.message}", Snackbar.LENGTH_SHORT).show()
-                    }
-            } else {
-                Snackbar.make(binding.root, "User not logged in. Cannot save limit.", Snackbar.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun updateNetworkTypeUI(networkType: NetworkType) {
-        val networkText = when (networkType) {
-            NetworkType.WIFI -> "WiFi"
-            NetworkType.MOBILE_DATA -> "Mobile Data"
-            NetworkType.ROAMING -> "Roaming"
-            NetworkType.ETHERNET -> "Ethernet"
-            NetworkType.NONE -> "No Connection"
-        }
-        binding.textNetworkType.text = networkText
-
-        // Change color based on network type
-        val color = when (networkType) {
-            NetworkType.WIFI, NetworkType.ETHERNET -> android.graphics.Color.parseColor("#4CAF50") // Green
-            NetworkType.MOBILE_DATA -> android.graphics.Color.parseColor("#FF9800") // Orange
-            NetworkType.ROAMING -> android.graphics.Color.parseColor("#F44336") // Red
-            NetworkType.NONE -> android.graphics.Color.parseColor("#9E9E9E") // Gray
-        }
-        binding.textNetworkType.setTextColor(color)
-    }
-
-    private fun updateDataUsageUI(stats: com.crabtrack.app.data.util.DataUsageStats) {
-        binding.textTodayUsage.text = "%.2f MB".format(stats.todayMB)
-        binding.textMonthUsage.text = "%.2f MB".format(stats.monthMB)
-        binding.textSessionUsage.text = "%.2f MB".format(stats.sessionMB)
-
-        // Change color based on usage percentage
-        val color = when {
-            stats.isOverDailyLimit() -> android.graphics.Color.parseColor("#F44336") // Red
-            stats.isNearDailyLimit() -> android.graphics.Color.parseColor("#FF9800") // Orange
-            else -> android.graphics.Color.parseColor("#4CAF50") // Green
-        }
-        binding.textTodayUsage.setTextColor(color)
-    }
-
     /**
      * Toggle the visibility of the Water Quality section
      */
@@ -1096,24 +1394,56 @@ class SettingsFragment : Fragment() {
     /**
      * Toggle the visibility of the Advanced Settings section
      */
-    private fun toggleAdvancedSettings() {
-        val content = binding.advancedSettingsContent
-        val icon = binding.advancedSettingsExpandIcon
 
-        if (content.visibility == View.VISIBLE) {
-            content.visibility = View.GONE
-            icon.rotation = 0f
-        } else {
-            content.visibility = View.VISIBLE
-            icon.rotation = 180f
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()
         // Cancel any ongoing dispensing to ensure relay is turned off
         cancelDispensing()
         _binding = null
+    }
+
+
+    private fun showSaveScheduleConfirm(
+        date: String,
+        time: String,
+        recurrenceType: RecurrenceType,
+        actionType: String,
+        onConfirm: () -> Unit
+    ) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_reminder_confirm, null)
+
+        val titleView = dialogView.findViewById<TextView>(R.id.text_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.text_message)
+        val buttonNo = dialogView.findViewById<MaterialButton>(R.id.button_confirm_no)
+        val buttonYes = dialogView.findViewById<MaterialButton>(R.id.button_confirm_yes)
+
+        val recurrenceLabel = when (recurrenceType) {
+            RecurrenceType.DAILY -> "Daily"
+            RecurrenceType.WEEKLY -> "Weekly"
+            RecurrenceType.NONE -> "One-time"
+        }
+
+        val actionLabel = when (actionType) {
+            "CLEAN" -> "Cleaning"
+            "FEED" -> "Feeding"
+            else -> actionType
+        }
+
+        titleView.text = "Save?"
+        messageView.text = "Are you sure you wanna save this $actionLabel schedule?\n\n$date at $time • $recurrenceLabel"
+
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+            .setView(dialogView)
+            .create()
+
+        buttonNo.setOnClickListener { dialog.dismiss() }
+        buttonYes.setOnClickListener {
+            dialog.dismiss()
+            onConfirm()
+        }
+
+        dialog.show()
     }
 
 

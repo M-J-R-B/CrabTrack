@@ -170,16 +170,89 @@ class MqttTelemetrySource @Inject constructor(
     }
 
     /**
-     * Parse the compact JSON payload from ESP32 into a WaterReading object
+     * Parse the JSON payload from ESP32 into a WaterReading object.
      *
-     * Expected format: {"t":24.5,"d":350,"s":34.0,"u":12.5,"p":7.8}
+     * Expected format: {"t":24.5,"d":350,"s":34.0,"u":12.5,"p":7.8,"ts":1638360000}
+     *
+     * If "ts" (timestamp) field is present:
+     * - Values < 10000000000 are treated as Unix seconds (multiply by 1000)
+     * - Values >= 10000000000 are treated as Unix milliseconds
+     * - Invalid timestamps (uptime counters, future dates) fall back to device time
+     *
+     * If "ts" is missing, falls back to System.currentTimeMillis() (device time).
      */
     private fun parseMessage(payload: String, tankId: String): WaterReading {
         val json = JSONObject(payload)
+        val now = System.currentTimeMillis()
+
+        Log.i(TAG, "=== MQTT TIMESTAMP DIAGNOSTIC ===")
+        Log.i(TAG, "MQTT Payload: $payload")
+        Log.i(TAG, "Current device time (ms): $now")
+
+        // Try to extract timestamp from payload
+        val timestampMs = if (json.has("ts")) {
+            val rawTimestamp = json.getLong("ts")
+            Log.i(TAG, "Raw timestamp from MQTT 'ts' field: $rawTimestamp")
+
+            // Detect timestamp format
+            val isSeconds = rawTimestamp < 10000000000L
+            val convertedTimestamp = if (isSeconds) {
+                Log.d(TAG, "Raw < 10B, treating as seconds: $rawTimestamp")
+                rawTimestamp * 1000 // Convert seconds to milliseconds
+            } else {
+                Log.d(TAG, "Raw >= 10B, treating as milliseconds: $rawTimestamp")
+                rawTimestamp
+            }
+
+            Log.i(TAG, "Converted timestamp: $convertedTimestamp")
+
+            // Enhanced sanity check with automatic fallback
+            val hourInMs = 3600000L
+            val dayInMs = 24 * hourInMs
+            val sevenDaysInMs = 7 * dayInMs
+            val timeDifference = convertedTimestamp - now
+            val timeDifferenceHours = timeDifference / hourInMs
+
+            Log.i(TAG, "Time difference: $timeDifference ms ($timeDifferenceHours hours)")
+
+            // Check if timestamp is reasonable (within ±7 days of device time)
+            // Current time should be > 1.7 trillion ms (after Nov 2023)
+            val isReasonable = Math.abs(timeDifference) <= sevenDaysInMs &&
+                             convertedTimestamp > 1700000000000L  // After Nov 2023
+
+            if (!isReasonable) {
+                Log.e(TAG, "❌ INVALID MQTT TIMESTAMP DETECTED!")
+                Log.e(TAG, "Converted timestamp: $convertedTimestamp")
+                Log.e(TAG, "Device time: $now")
+                Log.e(TAG, "Difference: $timeDifferenceHours hours")
+                Log.e(TAG, "This timestamp appears to be:")
+
+                if (convertedTimestamp < 1000000000000L) {
+                    Log.e(TAG, "  → Way too old (before year 2001)")
+                    Log.e(TAG, "  → Likely an ESP32 uptime counter, not Unix epoch")
+                } else {
+                    Log.e(TAG, "  → Way too far in the future")
+                }
+
+                Log.w(TAG, "⚠️ FALLBACK: Using device time instead")
+                now
+            } else {
+                Log.i(TAG, "✓ Timestamp is reasonable, using converted value")
+                convertedTimestamp
+            }
+        } else {
+            // No timestamp in payload - use device time
+            Log.w(TAG, "No 'ts' field in MQTT payload, using device time: $now")
+            now
+        }
+
+        Log.i(TAG, "Final timestamp: $timestampMs")
+        Log.i(TAG, "Formatted: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(timestampMs))}")
+        Log.i(TAG, "=================================")
 
         return WaterReading(
             tankId = tankId,
-            timestampMs = System.currentTimeMillis(),
+            timestampMs = timestampMs,
             pH = json.optDouble("p", 7.0),
             dissolvedOxygenMgL = null, // Not provided by ESP32
             salinityPpt = json.optDouble("s", 0.0),

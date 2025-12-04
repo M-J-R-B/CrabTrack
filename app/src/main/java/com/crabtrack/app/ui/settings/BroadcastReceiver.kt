@@ -12,27 +12,52 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.crabtrack.app.R
-import com.crabtrack.app.data.model.RecurrenceType
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
-import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 class FeedingAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // AUTH CHECK: Don't show notification if no user logged in
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            android.util.Log.w(
+                "FeedingAlarmReceiver",
+                "Alarm triggered but no user logged in - skipping notification"
+            )
+            return
+        }
+
         // Get reminder details from intent
         val reminderId = intent.getStringExtra("reminder_id") ?: ""
         val recurrenceType = intent.getStringExtra("recurrence_type") ?: "NONE"
         val originalTimestamp = intent.getLongExtra("timestamp", 0L)
 
+        // 🔹 NEW: read action type from intent (default to FEED)
+        val actionType = intent.getStringExtra("action_type") ?: "FEED"
+
+        // 🔹 Decide texts based on FEED / CLEAN
+        val (title, shortText, bigText) = when (actionType) {
+            "CLEAN" -> Triple(
+                "Cleaning Time!",
+                "It's time to clean the tank!",
+                "It's time to clean the tank! Make sure to remove debris and refresh the water as needed."
+            )
+            else -> Triple(
+                "Feeding Time!",
+                "Time to feed your crabs!",
+                "Time to feed your crabs! Don't forget to provide fresh food and clean water."
+            )
+        }
+
         // Build and show notification
         val notification = NotificationCompat.Builder(context, "feeding_channel")
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Feeding Time!")
-            .setContentText("Time to feed your crabs!")
+            .setContentTitle(title)
+            .setContentText(shortText)
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Time to feed your crabs! Don't forget to provide fresh food and water.")
+                    .bigText(bigText)
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -55,10 +80,22 @@ class FeedingAlarmReceiver : BroadcastReceiver() {
         // Handle recurring reminders
         when (recurrenceType) {
             "DAILY" -> {
-                scheduleNextReminder(context, reminderId, originalTimestamp, TimeUnit.DAYS.toMillis(1))
+                scheduleNextReminder(
+                    context = context,
+                    reminderId = reminderId,
+                    originalTimestamp = originalTimestamp,
+                    intervalMillis = TimeUnit.DAYS.toMillis(1),
+                    actionType = actionType
+                )
             }
             "WEEKLY" -> {
-                scheduleNextReminder(context, reminderId, originalTimestamp, TimeUnit.DAYS.toMillis(7))
+                scheduleNextReminder(
+                    context = context,
+                    reminderId = reminderId,
+                    originalTimestamp = originalTimestamp,
+                    intervalMillis = TimeUnit.DAYS.toMillis(7),
+                    actionType = actionType
+                )
             }
             "NONE" -> {
                 // One-time reminder - update status in Firebase
@@ -67,13 +104,23 @@ class FeedingAlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun scheduleNextReminder(context: Context, reminderId: String, originalTimestamp: Long, intervalMillis: Long) {
+    private fun scheduleNextReminder(
+        context: Context,
+        reminderId: String,
+        originalTimestamp: Long,
+        intervalMillis: Long,
+        actionType: String
+    ) {
         val nextTimestamp = originalTimestamp + intervalMillis
 
         val intent = Intent(context, FeedingAlarmReceiver::class.java).apply {
             putExtra("reminder_id", reminderId)
-            putExtra("recurrence_type", if (intervalMillis == TimeUnit.DAYS.toMillis(1)) "DAILY" else "WEEKLY")
+            putExtra(
+                "recurrence_type",
+                if (intervalMillis == TimeUnit.DAYS.toMillis(1)) "DAILY" else "WEEKLY"
+            )
             putExtra("timestamp", nextTimestamp)
+            putExtra("action_type", actionType) // 🔹 keep FEED/CLEAN for next alarm too
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

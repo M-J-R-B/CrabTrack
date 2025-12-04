@@ -12,49 +12,52 @@ import com.crabtrack.app.data.model.FeedingReminder
 import com.google.android.material.button.MaterialButton
 
 class FeedingReminderAdapter(
-    private val onDeleteClick: (FeedingReminder) -> Unit
-) : ListAdapter<FeedingReminder, FeedingReminderAdapter.ReminderViewHolder>(ReminderDiffCallback()) {
+    private val onDeleteClick: ((FeedingReminder) -> Unit)? = null,
+    private val readOnly: Boolean = false
+) : ListAdapter<FeedingReminder, FeedingReminderAdapter.ReminderViewHolder>(DiffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReminderViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_feeding_reminder, parent, false)
-        return ReminderViewHolder(view, onDeleteClick)
+        return ReminderViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ReminderViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
 
-    class ReminderViewHolder(
-        itemView: View,
-        private val onDeleteClick: (FeedingReminder) -> Unit
-    ) : RecyclerView.ViewHolder(itemView) {
+    inner class ReminderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-        private val dateTimeText: TextView = itemView.findViewById(R.id.reminder_date_time)
-        private val recurrenceText: TextView = itemView.findViewById(R.id.reminder_recurrence)
-        private val deleteButton: MaterialButton = itemView.findViewById(R.id.button_delete_reminder)
+        private val textDate: TextView = itemView.findViewById(R.id.text_date)
+        private val textRecurrence: TextView = itemView.findViewById(R.id.reminder_recurrence)
+        private val deleteButton: MaterialButton =
+            itemView.findViewById(R.id.button_delete_reminder)
 
         fun bind(reminder: FeedingReminder) {
-            // Format: "2025-10-22 at 14:30"
-            dateTimeText.text = "${reminder.date} at ${reminder.time}"
+            textDate.text = "${reminder.date} at ${reminder.time}"
 
-            // Show recurrence type
-            recurrenceText.text = reminder.getRecurrenceDisplayText()
+            textRecurrence.text = when (reminder.recurrence?.name) {
+                "DAILY" -> "Daily"
+                "WEEKLY" -> "Weekly"
+                else -> "One-time"
+            }
 
-            // Set delete button click listener
-            deleteButton.setOnClickListener {
-                onDeleteClick(reminder)
+            if (readOnly || onDeleteClick == null) {
+                deleteButton.visibility = View.GONE
+            } else {
+                deleteButton.visibility = View.VISIBLE
+                deleteButton.setOnClickListener {
+                    onDeleteClick?.invoke(reminder)   // ✅ safe call, fixes your error
+                }
             }
         }
     }
 
-    class ReminderDiffCallback : DiffUtil.ItemCallback<FeedingReminder>() {
-        override fun areItemsTheSame(oldItem: FeedingReminder, newItem: FeedingReminder): Boolean {
-            return oldItem.id == newItem.id
-        }
+    object DiffCallback : DiffUtil.ItemCallback<FeedingReminder>() {
+        override fun areItemsTheSame(oldItem: FeedingReminder, newItem: FeedingReminder) =
+            oldItem.id == newItem.id
 
-        override fun areContentsTheSame(oldItem: FeedingReminder, newItem: FeedingReminder): Boolean {
-            return oldItem == newItem
-        }
+        override fun areContentsTheSame(oldItem: FeedingReminder, newItem: FeedingReminder) =
+            oldItem == newItem
     }
 }

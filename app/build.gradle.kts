@@ -84,7 +84,12 @@ dependencies {
     
     // SwipeRefreshLayout
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    
+
+    // ExoPlayer (Media3) for RTSP streaming
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation("androidx.media3:media3-exoplayer-rtsp:1.4.1")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     
@@ -96,6 +101,7 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
+    implementation(libs.androidx.activity)
     kapt("androidx.hilt:hilt-compiler:1.2.0")
     
     // Hilt Dependency Injection

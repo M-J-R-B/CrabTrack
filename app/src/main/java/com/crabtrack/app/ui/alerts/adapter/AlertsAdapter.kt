@@ -35,7 +35,13 @@ class AlertsAdapter : ListAdapter<Alert, AlertsAdapter.AlertViewHolder>(AlertDif
             binding.apply {
                 textAlertParameter.text = alert.parameter
                 textAlertMessage.text = alert.message
-                textAlertTime.text = FormatUtils.formatTimestamp(alert.timestampMs)
+
+                // Log timestamp info for debugging
+                val formattedTime = FormatUtils.formatTimestamp(alert.timestampMs)
+                android.util.Log.d("AlertsAdapter", "Alert [${alert.id}]: timestampMs=${alert.timestampMs}, formatted='$formattedTime'")
+                android.util.Log.d("AlertsAdapter", "  → Full datetime: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(alert.timestampMs))}")
+
+                textAlertTime.text = formattedTime
                 textAlertTank.text = "Tank: ${alert.tankId}"
 
                 when (alert.severity) {

@@ -146,4 +146,67 @@ class NotificationHelper @Inject constructor(
             clearSensorAlert(sensorType)
         }
     }
+
+    /**
+     * Show water quality alert notification.
+     * Used by AlertWorker for background monitoring.
+     */
+    fun showWaterQualityAlert(alert: com.crabtrack.app.data.model.Alert) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = "com.crabtrack.app.OPEN_ALERTS"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "alerts")
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            alert.id.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val channelId = when (alert.severity) {
+            com.crabtrack.app.data.model.AlertSeverity.CRITICAL -> CHANNEL_ID_CRITICAL
+            com.crabtrack.app.data.model.AlertSeverity.WARNING -> CHANNEL_ID_WARNING
+            com.crabtrack.app.data.model.AlertSeverity.INFO -> CHANNEL_ID_WARNING
+        }
+
+        val priority = when (alert.severity) {
+            com.crabtrack.app.data.model.AlertSeverity.CRITICAL -> NotificationCompat.PRIORITY_HIGH
+            com.crabtrack.app.data.model.AlertSeverity.WARNING -> NotificationCompat.PRIORITY_DEFAULT
+            com.crabtrack.app.data.model.AlertSeverity.INFO -> NotificationCompat.PRIORITY_LOW
+        }
+
+        val iconRes = when (alert.severity) {
+            com.crabtrack.app.data.model.AlertSeverity.CRITICAL -> R.drawable.ic_critical
+            com.crabtrack.app.data.model.AlertSeverity.WARNING -> R.drawable.ic_warning
+            com.crabtrack.app.data.model.AlertSeverity.INFO -> R.drawable.ic_dashboard
+        }
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(iconRes)
+            .setContentTitle("🦀 ${alert.severity.name}: ${alert.parameter}")
+            .setContentText(alert.message)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("${alert.message}\n\nTank: ${alert.tankId}\n\nTap to view details")
+            )
+            .setPriority(priority)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 300, 200, 300))
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
+        val notificationId = NOTIFICATION_ID_ALERTS_BASE + alert.id.hashCode() % 1000
+
+        try {
+            with(NotificationManagerCompat.from(context)) {
+                notify(notificationId, notification)
+            }
+        } catch (e: SecurityException) {
+            android.util.Log.w("NotificationHelper", "Notification permission denied", e)
+        }
+    }
 }

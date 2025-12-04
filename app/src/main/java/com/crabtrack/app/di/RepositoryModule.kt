@@ -27,8 +27,9 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideThresholdRepository(
-        preferencesDataStore: PreferencesDataStore
+        preferencesDataStore: PreferencesDataStore,
+        firebaseThresholdRepository: com.crabtrack.app.data.repository.FirebaseThresholdRepository
     ): ThresholdRepository {
-        return ThresholdRepository(preferencesDataStore)
+        return ThresholdRepository(preferencesDataStore, firebaseThresholdRepository)
     }
 }

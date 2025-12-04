@@ -52,6 +52,9 @@
             android:id="@+id/action_forgotPassword_to_login"
             app:destination="@id/loginFragment" />
 
+        <action
+            android:id="@+id/action_forgot_to_login"
+            app:destination="@id/loginFragment" />
     </fragment>
 
     <!-- Register -->
@@ -75,6 +78,7 @@
 
 
 
+
     <!-- Main -->
     <fragment
         android:id="@+id/mainFragment"
@@ -90,6 +94,12 @@
     <action
         android:id="@+id/action_global_loginFragment"
         app:destination="@id/loginFragment"
+        app:popUpTo="@id/nav_graph"
+        app:popUpToInclusive="true" />
+
+    <action
+        android:id="@+id/action_global_mainFragment"
+        app:destination="@id/mainFragment"
         app:popUpTo="@id/nav_graph"
         app:popUpToInclusive="true" />
 
