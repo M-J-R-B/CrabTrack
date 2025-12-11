@@ -42,7 +42,7 @@ class AlertsAdapter : ListAdapter<Alert, AlertsAdapter.AlertViewHolder>(AlertDif
                 android.util.Log.d("AlertsAdapter", "  → Full datetime: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(alert.timestampMs))}")
 
                 textAlertTime.text = formattedTime
-                textAlertTank.text = "Tank: ${alert.tankId}"
+
 
                 when (alert.severity) {
                     AlertSeverity.INFO -> {

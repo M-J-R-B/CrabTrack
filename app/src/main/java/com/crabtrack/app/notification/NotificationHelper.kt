@@ -26,9 +26,13 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_ID_CRITICAL = "crabtrack_critical"
         const val CHANNEL_ID_ALERTS = "CRABTRACK_ALERTS"
         const val CHANNEL_ID_MOLTING = "CRABTRACK_MOLTING"
+        const val CHANNEL_ID_FEEDING = "CRABTRACK_FEEDING"
+        const val CHANNEL_ID_CLEANING = "CRABTRACK_CLEANING"
         const val NOTIFICATION_ID_BASE = 1000
         const val NOTIFICATION_ID_ALERTS_BASE = 2000
         const val NOTIFICATION_ID_MOLTING_BASE = 3000
+        const val NOTIFICATION_ID_FEEDING_BASE = 4000
+        const val NOTIFICATION_ID_CLEANING_BASE = 5000
     }
     
     init {
@@ -74,12 +78,34 @@ class NotificationHelper @Inject constructor(
                 enableLights(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500)
             }
-            
+
+            val feedingChannel = NotificationChannel(
+                CHANNEL_ID_FEEDING,
+                "Feeding Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Reminders for scheduled feeding times and overdue alerts"
+                enableVibration(true)
+                enableLights(true)
+            }
+
+            val cleaningChannel = NotificationChannel(
+                CHANNEL_ID_CLEANING,
+                "Cleaning Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Reminders for scheduled cleaning times and overdue alerts"
+                enableVibration(true)
+                enableLights(true)
+            }
+
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(warningChannel)
             notificationManager.createNotificationChannel(criticalChannel)
             notificationManager.createNotificationChannel(alertsChannel)
             notificationManager.createNotificationChannel(moltingChannel)
+            notificationManager.createNotificationChannel(feedingChannel)
+            notificationManager.createNotificationChannel(cleaningChannel)
         }
     }
     
@@ -208,5 +234,211 @@ class NotificationHelper @Inject constructor(
         } catch (e: SecurityException) {
             android.util.Log.w("NotificationHelper", "Notification permission denied", e)
         }
+    }
+
+    /**
+     * Show feeding alert notification.
+     * Used by FeedingCheckWorker for overdue feeding reminders.
+     */
+    fun showFeedingAlert(
+        tankName: String,
+        isOverdue: Boolean,
+        scheduledTime: String,
+        overdueMinutes: Int = 0
+    ) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = "com.crabtrack.app.OPEN_DASHBOARD"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            tankName.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val (title, message) = if (isOverdue) {
+            val overdueText = if (overdueMinutes >= 60) {
+                val hours = overdueMinutes / 60
+                val mins = overdueMinutes % 60
+                if (mins > 0) "${hours}h ${mins}m" else "${hours}h"
+            } else {
+                "$overdueMinutes min"
+            }
+            "Feeding Overdue!" to "$tankName feeding was scheduled for $scheduledTime (overdue by $overdueText)"
+        } else {
+            "Feeding Time" to "$tankName is due for feeding at $scheduledTime"
+        }
+
+        val iconRes = if (isOverdue) R.drawable.ic_warning else R.drawable.ic_time
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_FEEDING)
+            .setSmallIcon(iconRes)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$message\n\nTap to view feeding status")
+            )
+            .setPriority(if (isOverdue) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
+        val notificationId = NOTIFICATION_ID_FEEDING_BASE + tankName.hashCode() % 1000
+
+        try {
+            with(NotificationManagerCompat.from(context)) {
+                notify(notificationId, notification)
+            }
+            android.util.Log.i("NotificationHelper", "Feeding alert shown for $tankName (overdue=$isOverdue)")
+        } catch (e: SecurityException) {
+            android.util.Log.w("NotificationHelper", "Notification permission denied", e)
+        }
+    }
+
+    /**
+     * Clear feeding notification for a specific tank.
+     */
+    fun clearFeedingAlert(tankName: String) {
+        val notificationId = NOTIFICATION_ID_FEEDING_BASE + tankName.hashCode() % 1000
+        NotificationManagerCompat.from(context).cancel(notificationId)
+    }
+
+    /**
+     * Show cleaning alert notification.
+     * Used by CleaningCheckWorker for overdue cleaning reminders.
+     */
+    fun showCleaningAlert(
+        isOverdue: Boolean,
+        scheduledTime: String,
+        overdueMinutes: Int = 0
+    ) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = "com.crabtrack.app.OPEN_DASHBOARD"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            "cleaning".hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val (title, message) = if (isOverdue) {
+            val overdueText = if (overdueMinutes >= 60) {
+                val hours = overdueMinutes / 60
+                val mins = overdueMinutes % 60
+                if (mins > 0) "${hours}h ${mins}m" else "${hours}h"
+            } else {
+                "$overdueMinutes min"
+            }
+            "Cleaning Overdue!" to "Tank cleaning was scheduled for $scheduledTime (overdue by $overdueText)"
+        } else {
+            "Cleaning Time" to "Tank cleaning is due at $scheduledTime"
+        }
+
+        val iconRes = if (isOverdue) R.drawable.ic_warning else R.drawable.ic_time
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_CLEANING)
+            .setSmallIcon(iconRes)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$message\n\nTap to view cleaning status")
+            )
+            .setPriority(if (isOverdue) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
+        val notificationId = NOTIFICATION_ID_CLEANING_BASE
+
+        try {
+            with(NotificationManagerCompat.from(context)) {
+                notify(notificationId, notification)
+            }
+            android.util.Log.i("NotificationHelper", "Cleaning alert shown (overdue=$isOverdue)")
+        } catch (e: SecurityException) {
+            android.util.Log.w("NotificationHelper", "Notification permission denied", e)
+        }
+    }
+
+    /**
+     * Clear cleaning notification.
+     */
+    fun clearCleaningAlert() {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID_CLEANING_BASE)
+    }
+
+    /**
+     * Show molting alert notification.
+     * Used by AlertMonitoringService for real-time molting detection alerts.
+     */
+    fun showMoltingAlert(
+        tankName: String,
+        confidence: Double,
+        detectionClass: String
+    ) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = "com.crabtrack.app.OPEN_MOLTING"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "molting")
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            tankName.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val confidencePercent = (confidence * 100).toInt()
+        val title = "Molting Detected!"
+        val message = "$detectionClass detected in $tankName ($confidencePercent% confidence)"
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_MOLTING)
+            .setSmallIcon(R.drawable.ic_warning)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$message\n\nTap to view molting alerts and take action")
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
+        val notificationId = NOTIFICATION_ID_MOLTING_BASE + tankName.hashCode() % 1000
+
+        try {
+            with(NotificationManagerCompat.from(context)) {
+                notify(notificationId, notification)
+            }
+            android.util.Log.i("NotificationHelper", "Molting alert shown for $tankName (confidence=$confidencePercent%)")
+        } catch (e: SecurityException) {
+            android.util.Log.w("NotificationHelper", "Notification permission denied", e)
+        }
+    }
+
+    /**
+     * Clear molting notification for a specific tank.
+     */
+    fun clearMoltingAlert(tankName: String) {
+        val notificationId = NOTIFICATION_ID_MOLTING_BASE + tankName.hashCode() % 1000
+        NotificationManagerCompat.from(context).cancel(notificationId)
     }
 }

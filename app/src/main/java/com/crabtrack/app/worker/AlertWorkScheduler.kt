@@ -18,6 +18,8 @@ class AlertWorkScheduler @Inject constructor(
     companion object {
         private const val TAG = "AlertWorkScheduler"
         private const val CHECK_INTERVAL_MINUTES = 15L
+        private const val FEEDING_CHECK_INTERVAL_MINUTES = 15L
+        private const val CLEANING_CHECK_INTERVAL_MINUTES = 15L
     }
 
     /**
@@ -72,5 +74,106 @@ class AlertWorkScheduler @Inject constructor(
             android.util.Log.e(TAG, "Error checking work status", e)
             false
         }
+    }
+
+    /**
+     * Schedule periodic feeding status checks.
+     * This will:
+     * - Generate daily feeding logs based on schedules
+     * - Update pending feedings to overdue after grace period
+     * - Send notifications for overdue feedings
+     */
+    fun scheduleFeedingChecks() {
+        android.util.Log.i(TAG, "Scheduling periodic feeding checks (every $FEEDING_CHECK_INTERVAL_MINUTES minutes)")
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(false)
+            .build()
+
+        val feedingWorkRequest = PeriodicWorkRequestBuilder<FeedingCheckWorker>(
+            FEEDING_CHECK_INTERVAL_MINUTES,
+            TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .addTag(FeedingCheckWorker.TAG)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            FeedingCheckWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            feedingWorkRequest
+        )
+
+        android.util.Log.i(TAG, "Feeding check work scheduled successfully")
+    }
+
+    /**
+     * Cancel feeding check work.
+     * Call this on logout to stop background checks.
+     */
+    fun cancelFeedingChecks() {
+        android.util.Log.i(TAG, "Cancelling feeding check work")
+        WorkManager.getInstance(context).cancelUniqueWork(FeedingCheckWorker.WORK_NAME)
+    }
+
+    /**
+     * Schedule periodic cleaning status checks.
+     * This will:
+     * - Check for overdue cleaning reminders
+     * - Send notifications for overdue cleaning
+     */
+    fun scheduleCleaningChecks() {
+        android.util.Log.i(TAG, "Scheduling periodic cleaning checks (every $CLEANING_CHECK_INTERVAL_MINUTES minutes)")
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(false)
+            .build()
+
+        val cleaningWorkRequest = PeriodicWorkRequestBuilder<CleaningCheckWorker>(
+            CLEANING_CHECK_INTERVAL_MINUTES,
+            TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .addTag(CleaningCheckWorker.TAG)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            CleaningCheckWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            cleaningWorkRequest
+        )
+
+        android.util.Log.i(TAG, "Cleaning check work scheduled successfully")
+    }
+
+    /**
+     * Cancel cleaning check work.
+     * Call this on logout to stop background checks.
+     */
+    fun cancelCleaningChecks() {
+        android.util.Log.i(TAG, "Cancelling cleaning check work")
+        WorkManager.getInstance(context).cancelUniqueWork(CleaningCheckWorker.WORK_NAME)
+    }
+
+    /**
+     * Schedule all background monitoring tasks.
+     * Convenience method to start alert, feeding, and cleaning monitoring.
+     */
+    fun scheduleAllMonitoring() {
+        scheduleAlertMonitoring()
+        scheduleFeedingChecks()
+        scheduleCleaningChecks()
+    }
+
+    /**
+     * Cancel all background monitoring tasks.
+     * Convenience method to stop alert, feeding, and cleaning monitoring.
+     */
+    fun cancelAllMonitoring() {
+        cancelAlertMonitoring()
+        cancelFeedingChecks()
+        cancelCleaningChecks()
     }
 }

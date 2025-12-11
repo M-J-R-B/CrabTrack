@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_molting_alert"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/critical_background"
+    app:rippleColor="@color/primary"
+    app:strokeColor="@color/critical_text"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
+
+        <!-- Molting Icon -->
+        <TextView
+            android:id="@+id/icon_molting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🦀"
+            android:textSize="20sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Tank Name + Molt State combined -->
+        <TextView
+            android:id="@+id/text_tank_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/critical_text"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/text_confidence"
+            app:layout_constraintStart_toEndOf="@id/icon_molting"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/text_time_ago"
+            app:layout_constraintVertical_chainStyle="packed"
+            tools:text="Tank 1 - Molting Detected" />
+
+        <!-- Time ago display -->
+        <TextView
+            android:id="@+id/text_time_ago"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintEnd_toStartOf="@id/text_confidence"
+            app:layout_constraintStart_toEndOf="@id/icon_molting"
+            app:layout_constraintTop_toBottomOf="@id/text_tank_name"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="2 minutes ago" />
+
+        <!-- Confidence Badge -->
+
+        <!-- Chevron for navigation -->
+        <TextView
+            android:id="@+id/text_confidence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/severity_badge_background"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="@color/critical_text"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/icon_chevron"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="81%" />
+
+        <ImageView
+            android:id="@+id/icon_chevron"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_chevron_right"
+            android:contentDescription="View tank"
+            app:tint="@color/critical_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

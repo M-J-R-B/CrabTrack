@@ -111,7 +111,15 @@ class FeedingAlarmReceiver : BroadcastReceiver() {
         intervalMillis: Long,
         actionType: String
     ) {
-        val nextTimestamp = originalTimestamp + intervalMillis
+        // Calculate next occurrence from NOW, not from original timestamp
+        // This ensures reminders don't get stuck in the past if device was off
+        val now = System.currentTimeMillis()
+        var nextTimestamp = originalTimestamp
+
+        // Find the next future occurrence
+        while (nextTimestamp <= now) {
+            nextTimestamp += intervalMillis
+        }
 
         val intent = Intent(context, FeedingAlarmReceiver::class.java).apply {
             putExtra("reminder_id", reminderId)

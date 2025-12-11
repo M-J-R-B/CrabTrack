@@ -31,20 +31,12 @@
         android:paddingHorizontal="0dp">
 
         <LinearLayout
+            android:id="@+id/tankChipContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/tank1Chip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tank 1"
-                android:checked="true"
-                android:checkable="true"
-                app:chipStrokeWidth="2dp"
-                app:chipStrokeColor="@color/primary"
-                android:layout_marginEnd="8dp" />
+            <!-- Tank chips will be added dynamically -->
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/addTankChip"
@@ -129,6 +121,91 @@
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- Molting Action Buttons (shown when tank has active molting status) -->
+    <LinearLayout
+        android:id="@+id/moltingButtonsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <!-- Row 1: Still Molting and Molting Complete -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <!-- Still Molting Button (Blue) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonStillMolting"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="@string/alert_action_still_molting"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/action_still_molting"
+                app:icon="@drawable/ic_visibility"
+                app:iconTint="@color/white" />
+
+            <!-- Molting Complete Button (Green) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonMoltingComplete"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="@string/alert_action_molting_complete"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/action_molting_complete"
+                app:icon="@drawable/ic_check_circle"
+                app:iconTint="@color/white" />
+
+        </LinearLayout>
+
+        <!-- Row 2: False Alarm and Dismiss -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- False Alarm Button (Yellow/Warning) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonFalseAlarm"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="@string/alert_action_false_alarm"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/action_false_alarm"
+                app:icon="@drawable/ic_error_outline"
+                app:iconTint="@color/white" />
+
+            <!-- Dismiss Button (Gray) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonDismiss"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="@string/alert_action_dismiss"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/action_dismiss"
+                app:icon="@drawable/ic_delete"
+                app:iconTint="@color/white" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
     <!-- Stream Card -->
     <com.google.android.material.card.MaterialCardView

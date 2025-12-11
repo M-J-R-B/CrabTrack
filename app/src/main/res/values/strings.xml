@@ -53,6 +53,38 @@
 
     <!-- Molting -->
     <string name="molting_title">Molt Monitoring</string>
+    <string name="no_molting_alerts">No Active Molting Alerts</string>
+    <string name="molting_monitoring_normal">All tanks are being monitored normally</string>
+
+    <!-- Alert Action Buttons -->
+    <string name="alert_action_still_molting">Still Molting</string>
+    <string name="alert_action_still_molting_subtitle">Confirm detection, keep monitoring</string>
+    <string name="alert_action_molting_complete">Molting Complete</string>
+    <string name="alert_action_molting_complete_subtitle">Confirm the crab has finished molting</string>
+    <string name="alert_action_false_alarm">False Alarm</string>
+    <string name="alert_action_false_alarm_subtitle">This detection was incorrect</string>
+    <string name="alert_action_dismiss">Dismiss</string>
+    <string name="alert_action_dismiss_subtitle">Remove this alert without feedback</string>
+
+    <!-- Alert Action Toast Messages -->
+    <string name="toast_still_molting">Alert acknowledged - still monitoring</string>
+    <string name="toast_molting_complete">Molting confirmed complete</string>
+    <string name="toast_false_alarm">Alert dismissed as false alarm</string>
+    <string name="toast_alert_dismissed">Alert dismissed</string>
+
+    <!-- Alert Action Dialog Titles -->
+    <string name="dialog_still_molting_title">Confirm Still Molting?</string>
+    <string name="dialog_still_molting_message">This will mark the alert as acknowledged while continuing to monitor the crab.</string>
+    <string name="dialog_dismiss_title">Dismiss Alert?</string>
+    <string name="dialog_dismiss_message">This will remove the alert without providing feedback for ML improvement.</string>
+
+    <!-- Developer Tools -->
+    <string name="developer_tools_title">Developer Tools</string>
+    <string name="generate_test_alert">Generate Test Molting Alert</string>
+    <string name="select_tank_generate">Select Tank &amp; Generate</string>
+    <string name="test_alert_generated">Test alert generated for %1$s</string>
+    <string name="test_alert_failed">Failed to generate test alert</string>
+    <string name="select_tank_dialog_title">Select Tank for Test Alert</string>
     <string name="molt_state_label">Current State</string>
     <string name="risk_level_label">Risk Level</string>
     <string name="care_window_label">Care Window Remaining</string>
@@ -66,6 +98,17 @@
     <string name="time_format" formatted="false">%02d:%02d:%02d</string>
     <string name="no_care_window">No active window</string>
     <string name="no_recent_events">No recent events</string>
+
+    <!-- Cleaning -->
+    <string name="cleaning_status_title">Cleaning Status</string>
+    <string name="cleaning_all_clean">All Clean</string>
+    <string name="cleaning_pending">Pending</string>
+    <string name="cleaning_overdue">Overdue</string>
+    <string name="cleaning_scheduled_time">Scheduled time</string>
+    <string name="cleaning_daily_at">Daily at %s</string>
+    <string name="cleaning_no_schedule">No cleaning schedule set</string>
+    <string name="cleaning_overdue_by">Cleaning overdue by %s!</string>
+    <string name="warning">Warning</string>
 
     <!-- Camera -->
     <string name="nav_camera">Camera</string>

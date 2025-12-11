@@ -27,4 +27,15 @@
     <color name="divider">#E0E0E0</color>
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
+
+    <!-- Navigation Colors -->
+    <color name="nav_active">#FF7043</color>
+    <color name="nav_inactive">#9E9E9E</color>
+    <color name="nav_background">#FFFFFF</color>
+
+    <!-- Alert Action Button Colors -->
+    <color name="action_still_molting">#1976D2</color>
+    <color name="action_molting_complete">#2E7D32</color>
+    <color name="action_false_alarm">#F57C00</color>
+    <color name="action_dismiss">#757575</color>
 </resources>

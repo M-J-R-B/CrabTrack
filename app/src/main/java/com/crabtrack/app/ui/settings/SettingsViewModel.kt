@@ -7,6 +7,9 @@ import com.crabtrack.app.data.local.ThresholdsStore
 import com.crabtrack.app.data.model.Thresholds
 import com.crabtrack.app.data.model.FeedingReminder
 import com.crabtrack.app.data.model.RecurrenceType
+import com.crabtrack.app.data.model.Tank
+import com.crabtrack.app.data.repository.TankRepository
+import com.crabtrack.app.data.util.TestAlertGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,7 +46,9 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val thresholdsStore: ThresholdsStore
+    private val thresholdsStore: ThresholdsStore,
+    private val tankRepository: TankRepository,
+    private val testAlertGenerator: TestAlertGenerator
 ) : ViewModel() {
 
     companion object {
@@ -108,12 +113,25 @@ class SettingsViewModel @Inject constructor(
     private val _reminderMessage = MutableStateFlow<String?>(null)
     val reminderMessage: StateFlow<String?> = _reminderMessage.asStateFlow()
 
+    // Tank list for test alert generation
+    private val _tanks = MutableStateFlow<List<Tank>>(emptyList())
+    val tanks: StateFlow<List<Tank>> = _tanks.asStateFlow()
+
+    // Test alert feedback message
+    private val _testAlertMessage = MutableStateFlow<String?>(null)
+    val testAlertMessage: StateFlow<String?> = _testAlertMessage.asStateFlow()
+
+    // Test alert generation in progress
+    private val _isGeneratingTestAlert = MutableStateFlow(false)
+    val isGeneratingTestAlert: StateFlow<Boolean> = _isGeneratingTestAlert.asStateFlow()
+
     init {
         Log.d(TAG, "SettingsViewModel initialized")
         val currentUser = FirebaseAuth.getInstance().currentUser
         Log.d(TAG, "Current user: ${currentUser?.uid ?: "NONE"}")
         loadThresholds()
         loadFeedingReminders()
+        loadTanks()
     }
 
     private fun loadThresholds() {
@@ -675,6 +693,64 @@ class SettingsViewModel @Inject constructor(
 
     fun clearReminderMessage() {
         _reminderMessage.value = null
+    }
+
+    // ========== Test Alert Generation ==========
+
+    /**
+     * Loads the list of tanks for the test alert dialog.
+     */
+    private fun loadTanks() {
+        viewModelScope.launch {
+            try {
+                tankRepository.observeAllTanks()
+                    .catch { e ->
+                        Log.e(TAG, "Error loading tanks", e)
+                    }
+                    .collect { tanks ->
+                        _tanks.value = tanks
+                        Log.d(TAG, "Loaded ${tanks.size} tanks for test alert selection")
+                    }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load tanks", e)
+            }
+        }
+    }
+
+    /**
+     * Generates a test molting alert for the specified tank.
+     *
+     * @param tank The tank to generate the test alert for
+     */
+    fun generateTestAlert(tank: Tank) {
+        viewModelScope.launch {
+            _isGeneratingTestAlert.value = true
+            try {
+                val result = testAlertGenerator.generateTestAlert(tank)
+                result.fold(
+                    onSuccess = { alertId ->
+                        Log.i(TAG, "Test alert generated: $alertId")
+                        _testAlertMessage.value = "Test alert generated for ${tank.displayName}"
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Failed to generate test alert", error)
+                        _testAlertMessage.value = "Failed to generate test alert: ${error.message}"
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error generating test alert", e)
+                _testAlertMessage.value = "Error: ${e.message}"
+            } finally {
+                _isGeneratingTestAlert.value = false
+            }
+        }
+    }
+
+    /**
+     * Clears the test alert message after it has been shown.
+     */
+    fun clearTestAlertMessage() {
+        _testAlertMessage.value = null
     }
 
 }

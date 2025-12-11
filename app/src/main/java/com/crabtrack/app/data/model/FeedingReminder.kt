@@ -1,9 +1,9 @@
 package com.crabtrack.app.data.model
 
 enum class RecurrenceType {
-    NONE,    // One-time reminder
-    DAILY,   // Repeats every day
-    WEEKLY   // Repeats every week
+    ONE_TIME,  // One-time reminder
+    DAILY,     // Repeats every day
+    WEEKLY     // Repeats every week
 }
 
 data class FeedingReminder(
@@ -11,7 +11,7 @@ data class FeedingReminder(
     val date: String = "",        // Format: yyyy-MM-dd
     val time: String = "",        // Format: HH:mm
     val timestamp: Long = 0L,     // Unix timestamp in milliseconds (UTC)
-    val recurrence: RecurrenceType = RecurrenceType.NONE,
+    val recurrence: RecurrenceType = RecurrenceType.ONE_TIME,
     val status: String = "scheduled",  // scheduled, completed, cancelled
     val createdAt: Long = 0L,  // Don't use System.currentTimeMillis() in data class
     val actionType: String = ActionType.FEED.name
@@ -19,7 +19,7 @@ data class FeedingReminder(
     // Helper function to get display text for recurrence
     fun getRecurrenceDisplayText(): String {
         return when (recurrence) {
-            RecurrenceType.NONE -> "One-time"
+            RecurrenceType.ONE_TIME -> "One-time"
             RecurrenceType.DAILY -> "Daily"
             RecurrenceType.WEEKLY -> "Weekly"
         }
@@ -41,7 +41,7 @@ data class FeedingReminder(
             date: String,
             time: String,
             timestamp: Long,
-            recurrence: RecurrenceType = RecurrenceType.NONE,
+            recurrence: RecurrenceType = RecurrenceType.ONE_TIME,
             actionType: String = ActionType.FEED.name
         ): FeedingReminder {
             return FeedingReminder(

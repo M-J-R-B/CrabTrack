@@ -16,4 +16,14 @@
     </style>
 
     <style name="Theme.CrabTrackAndroidApp" parent="Base.Theme.CrabTrackAndroidApp" />
+
+    <style name="CrabTrack_BottomNavigation" parent="Widget.Material3.BottomNavigationView">
+        <item name="itemIconTint">@color/nav_item_color</item>
+        <item name="itemTextColor">@color/nav_item_color</item>
+        <item name="android:background">@drawable/nav_background</item>
+        <item name="elevation">8dp</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="itemPaddingTop">8dp</item>
+        <item name="itemPaddingBottom">12dp</item>
+    </style>
 </resources>

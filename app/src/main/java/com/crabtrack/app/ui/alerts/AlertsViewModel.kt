@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
@@ -43,14 +43,13 @@ class AlertsViewModel @Inject constructor(
 
     private fun startAlertCollection() {
         viewModelScope.launch {
-            // Use the new repository flow for all alerts
             telemetryRepository.allAlerts
-                .scan(emptyList<Alert>()) { accumulated, newAlerts ->
-                    (accumulated + newAlerts)
-                        .distinctBy { it.id }
+                .map { alerts ->
+                    alerts
                         .sortedByDescending { it.timestampMs }
                         .take(50)
                 }
+                .distinctUntilChanged()  // Only emit when list actually changes
                 .catch { exception ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

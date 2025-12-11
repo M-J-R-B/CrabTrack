@@ -7,8 +7,13 @@ import com.crabtrack.app.data.local.MockTelemetryDataSource
 import com.crabtrack.app.data.local.ThresholdsStore
 import com.crabtrack.app.data.local.datastore.PreferencesDataStore
 import com.crabtrack.app.data.model.Thresholds
+import com.crabtrack.app.data.repository.AlertRepository
+import com.crabtrack.app.data.repository.CameraMappingRepository
 import com.crabtrack.app.data.repository.MoltRepository
 import com.crabtrack.app.data.repository.TelemetryRepository
+import com.crabtrack.app.data.util.TestAlertGenerator
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import com.crabtrack.app.data.source.TelemetrySource
 import com.crabtrack.app.data.source.mock.MockTelemetrySource
 import com.crabtrack.app.data.source.molt.MockMoltSource
@@ -111,9 +116,20 @@ object AppModule {
         telemetrySource: TelemetrySource,
         evaluateThresholdsUseCase: EvaluateThresholdsUseCase,
         @ApplicationScope applicationScope: CoroutineScope,
-        thresholdsStore: ThresholdsStore
+        thresholdsStore: ThresholdsStore,
+        alertRepository: AlertRepository
     ): TelemetryRepository {
-        return TelemetryRepository(telemetrySource, evaluateThresholdsUseCase, applicationScope, thresholdsStore)
+        return TelemetryRepository(telemetrySource, evaluateThresholdsUseCase, applicationScope, thresholdsStore, alertRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAlertRepository(
+        firebaseAuth: com.google.firebase.auth.FirebaseAuth,
+        firebaseDatabase: com.google.firebase.database.FirebaseDatabase,
+        @ApplicationScope scope: CoroutineScope
+    ): AlertRepository {
+        return AlertRepository(firebaseAuth, firebaseDatabase, scope)
     }
     
     // Molt-related providers
@@ -198,5 +214,26 @@ object AppModule {
             firebaseThresholdRepository,
             context
         )
+    }
+
+    // Camera Mapping and Test Alert providers
+
+    @Provides
+    @Singleton
+    fun provideCameraMappingRepository(
+        firebaseDatabase: FirebaseDatabase,
+        @ApplicationScope scope: CoroutineScope
+    ): CameraMappingRepository {
+        return CameraMappingRepository(firebaseDatabase, scope)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTestAlertGenerator(
+        firebaseAuth: FirebaseAuth,
+        firebaseDatabase: FirebaseDatabase,
+        cameraMappingRepository: CameraMappingRepository
+    ): TestAlertGenerator {
+        return TestAlertGenerator(firebaseAuth, firebaseDatabase, cameraMappingRepository)
     }
 }

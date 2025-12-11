@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.crabtrack.app.data.repository.AuthRepository
+import com.crabtrack.app.data.repository.CameraMappingRepository
 import com.crabtrack.app.data.repository.TelemetryRepository
 import com.google.firebase.database.FirebaseDatabase
 import dagger.hilt.android.HiltAndroidApp
@@ -20,6 +21,9 @@ class CrabTrackApplication : Application() {
 
     @Inject
     lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var cameraMappingRepository: CameraMappingRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -36,6 +40,10 @@ class CrabTrackApplication : Application() {
             android.util.Log.i("CrabTrackApp", "AuthRepository initialized: ${it::class.simpleName}")
             android.util.Log.i("CrabTrackApp", "Auth state listener is now active")
         }
+
+        // Start listening to camera mappings for molting alerts
+        cameraMappingRepository.startListening()
+        android.util.Log.i("CrabTrackApp", "CameraMappingRepository started listening")
 
         // Enable Firebase Realtime Database persistence for offline support
         try {

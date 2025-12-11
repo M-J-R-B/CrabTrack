@@ -78,32 +78,6 @@
             app:layout_constraintTop_toBottomOf="@+id/text_alert_parameter"
             tools:text="pH level (7.2) is below minimum threshold (7.5)" />
 
-        <!-- Divider -->
-        <View
-            android:id="@+id/divider"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_marginTop="12dp"
-            android:background="@color/divider"
-            android:alpha="0.5"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_alert_message" />
-
-        <!-- Tank ID -->
-        <TextView
-            android:id="@+id/text_alert_tank"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="@color/text_secondary"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/divider"
-            tools:text="Tank: tank_001" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

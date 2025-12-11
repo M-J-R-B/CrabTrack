@@ -23,7 +23,8 @@ class TelemetryRepository(
     private val telemetrySource: TelemetrySource,
     private val evaluateThresholdsUseCase: EvaluateThresholdsUseCase,
     private val applicationScope: CoroutineScope,
-    private val thresholdsStore: ThresholdsStore
+    private val thresholdsStore: ThresholdsStore,
+    private val alertRepository: AlertRepository
 ) {
 
     // Shared readings flow with proper lifecycle management
@@ -66,8 +67,8 @@ class TelemetryRepository(
             replay = 1
         )
 
-    // Live threshold-aware all alerts flow
-    val allAlerts: Flow<List<Alert>> = combine(
+    // Local threshold-aware alerts flow (used as fallback)
+    private val localAlerts: Flow<List<Alert>> = combine(
         readings,
         thresholdsStore.thresholds
     ) { reading, thresholds ->
@@ -75,6 +76,23 @@ class TelemetryRepository(
     }.transform { alerts ->
         if (alerts.isNotEmpty()) {
             emit(alerts)
+        }
+    }
+
+    // Firebase alerts with local fallback
+    // Primary: Alerts from Firebase at users/{uid}/alerts/
+    // Fallback: Local threshold evaluation when Firebase is empty
+    val allAlerts: Flow<List<Alert>> = combine(
+        alertRepository.observeAlerts(),
+        localAlerts
+    ) { firebaseAlerts, localAlertsList ->
+        // Use Firebase alerts if available, otherwise fall back to local
+        if (firebaseAlerts.isNotEmpty()) {
+            android.util.Log.d("TelemetryRepository", "Using ${firebaseAlerts.size} Firebase alerts")
+            firebaseAlerts
+        } else {
+            android.util.Log.d("TelemetryRepository", "Fallback to ${localAlertsList.size} local alerts")
+            localAlertsList
         }
     }.shareIn(
         scope = applicationScope,

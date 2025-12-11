@@ -7,7 +7,13 @@
     <fragment
         android:id="@+id/dashboardFragment"
         android:name="com.crabtrack.app.presentation.dashboard.DashboardFragment"
-        android:label="Dashboard" />
+        android:label="Dashboard">
+
+        <action
+            android:id="@+id/action_dashboard_to_camera"
+            app:destination="@id/cameraFragment" />
+
+    </fragment>
 
     <fragment
         android:id="@+id/alertsFragment"
@@ -20,8 +26,27 @@
         android:label="Settings" />
 
     <fragment
+        android:id="@+id/moltingFragment"
+        android:name="com.crabtrack.app.ui.molting.MoltingFragment"
+        android:label="Molting">
+
+        <action
+            android:id="@+id/action_molting_to_camera"
+            app:destination="@id/cameraFragment" />
+
+    </fragment>
+
+    <fragment
         android:id="@+id/cameraFragment"
         android:name="com.crabtrack.app.ui.camera.CameraFragment"
-        android:label="Live Stream" />
+        android:label="Live Stream">
+
+        <argument
+            android:name="tankId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+    </fragment>
 
 </navigation>

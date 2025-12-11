@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_feeding_status"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/card_background"
+    app:rippleColor="@color/primary">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Feeding Icon -->
+        <TextView
+            android:id="@+id/icon_feeding"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🍽️"
+            android:textSize="24sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Tank Name Header -->
+        <TextView
+            android:id="@+id/text_tank_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/icon_feeding"
+            app:layout_constraintTop_toTopOf="@id/icon_feeding"
+            app:layout_constraintEnd_toStartOf="@id/text_status_badge"
+            app:layout_constraintBottom_toBottomOf="@id/icon_feeding"
+            tools:text="Tank 1" />
+
+        <!-- Status Badge -->
+        <TextView
+            android:id="@+id/text_status_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textStyle="bold"
+            android:background="@drawable/status_badge_background"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="All Fed"
+            tools:textColor="@color/normal_text" />
+
+        <!-- Divider -->
+        <View
+            android:id="@+id/divider"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:background="@color/divider"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/icon_feeding" />
+
+        <!-- Today's Feeding Log Section -->
+        <TextView
+            android:id="@+id/text_today_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Today's Feedings"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/divider" />
+
+        <!-- Feeding Slots RecyclerView (horizontal for AM/PM slots) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_feeding_slots"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:clipToPadding="false"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/text_today_label"
+            tools:listitem="@layout/item_feeding_slot"
+            tools:itemCount="2" />
+
+        <!-- No Schedule Message (shown when no schedule is set) -->
+        <TextView
+            android:id="@+id/text_no_schedule"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No feeding schedule set. Tap to configure."
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/text_secondary"
+            android:textStyle="italic"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/text_today_label"
+            tools:visibility="gone" />
+
+        <!-- Next Scheduled Section -->
+        <LinearLayout
+            android:id="@+id/layout_next_scheduled"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/recycler_view_feeding_slots">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_schedule"
+                android:contentDescription="Next scheduled"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/text_next_scheduled"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="@color/text_secondary"
+                tools:text="Next: 6:00 PM (in 2 hours)" />
+
+            <!-- Confirm Button (shown when there's a pending feeding) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_confirm_feeding"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Mark Fed"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:cornerRadius="18dp"
+                app:icon="@drawable/ic_check_circle"
+                app:iconSize="16dp"
+                app:iconTint="@color/normal_text"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+
+        <!-- Overdue Warning Banner (shown when overdue) -->
+        <LinearLayout
+            android:id="@+id/layout_overdue_warning"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/critical_background"
+            android:padding="10dp"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_next_scheduled"
+            tools:visibility="visible">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_warning"
+                android:contentDescription="Warning"
+                app:tint="@color/critical_text" />
+
+            <TextView
+                android:id="@+id/text_overdue_message"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="@color/critical_text"
+                android:textStyle="bold"
+                tools:text="Feeding overdue by 45 minutes!" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

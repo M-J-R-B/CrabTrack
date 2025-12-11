@@ -1,0 +1,974 @@
+================================================================================
+MOLTING ALERTS IMPLEMENTATION - CrabTrack Android App
+================================================================================
+
+Overview:
+---------
+This implementation adds molting status tracking per tank. The app listens to the
+global /molting_alerts path (from ML detection), matches camera_ip to tanks, and
+when confidence >= 80%, writes the alert to the user's personal path. The dashboard
+displays alerts from the user's path. Tapping an alert navigates to CameraFragment
+with the tank selected.
+
+Firebase Structure:
+-------------------
+Source (ML Detection System writes here):
+  Path: /molting_alerts/{alertId}
+  {
+    "camera_ip": "192.168.8.115",
+    "confidence": 0.8058044910430908,
+    "detection_class": "Molting-Crab",
+    "status": "unread",
+    "timestamp": "2025-12-03T19:30:05.718844+08:00"
+  }
+
+Destination (App writes high-confidence alerts here):
+  Path: users/{uid}/molting_alerts/{alertId}
+  - Same structure as source
+  - Only alerts with confidence >= 80% are copied here
+  - User must be authenticated
+
+Tank Mapping: camera_ip -> tankId (e.g., "192.168.8.115" -> "tank1")
+
+================================================================================
+NEW FILES CREATED
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE 1: app/src/main/java/com/crabtrack/app/data/model/MoltingAlert.kt
+--------------------------------------------------------------------------------
+
+package com.crabtrack.app.data.model
+
+import com.google.firebase.database.DataSnapshot
+
+/**
+ * Represents a molting alert from the ML detection system.
+ *
+ * Firebase structure at /molting_alerts/{alertId}:
+ * {
+ *   "camera_ip": "192.168.8.115",
+ *   "confidence": 0.8058044910430908,
+ *   "detection_class": "Molting-Crab",
+ *   "status": "unread",
+ *   "timestamp": "2025-12-03T19:30:05.718844+08:00"
+ * }
+ */
+data class MoltingAlert(
+    val id: String,
+    val cameraIp: String,
+    val confidence: Double,
+    val detectionClass: String,
+    val status: String,           // "unread" / "read"
+    val timestamp: String,        // ISO 8601 format
+    val tankId: String            // Derived from cameraIp mapping
+) {
+    /**
+     * Returns true if confidence is >= 80% (0.80)
+     */
+    fun isHighConfidence(): Boolean = confidence >= 0.80
+
+    /**
+     * Maps detection class to alert severity.
+     * Molting-Crab detection is considered CRITICAL.
+     */
+    fun toSeverity(): AlertSeverity {
+        return when (detectionClass) {
+            "Molting-Crab" -> AlertSeverity.CRITICAL
+            else -> AlertSeverity.WARNING
+        }
+    }
+
+    /**
+     * Converts to a map for writing to Firebase.
+     */
+    fun toFirebaseMap(): Map<String, Any?> {
+        return mapOf(
+            "camera_ip" to cameraIp,
+            "confidence" to confidence,
+            "detection_class" to detectionClass,
+            "status" to status,
+            "timestamp" to timestamp
+        )
+    }
+
+    companion object {
+        /**
+         * Creates a MoltingAlert from a Firebase DataSnapshot.
+         * Returns null if required fields are missing.
+         */
+        fun fromSnapshot(snapshot: DataSnapshot): MoltingAlert? {
+            val id = snapshot.key ?: return null
+            val cameraIp = snapshot.child("camera_ip").getValue(String::class.java) ?: return null
+            val confidence = snapshot.child("confidence").getValue(Double::class.java) ?: return null
+            val detectionClass = snapshot.child("detection_class").getValue(String::class.java) ?: return null
+            val status = snapshot.child("status").getValue(String::class.java) ?: "unread"
+            val timestamp = snapshot.child("timestamp").getValue(String::class.java) ?: return null
+
+            // Map camera_ip to tankId
+            val tankId = CameraToTankMapper.getTankIdOrDefault(cameraIp)
+
+            return MoltingAlert(
+                id = id,
+                cameraIp = cameraIp,
+                confidence = confidence,
+                detectionClass = detectionClass,
+                status = status,
+                timestamp = timestamp,
+                tankId = tankId
+            )
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+FILE 2: app/src/main/java/com/crabtrack/app/data/model/CameraToTankMapper.kt
+--------------------------------------------------------------------------------
+
+package com.crabtrack.app.data.model
+
+/**
+ * Maps camera IP addresses to tank IDs.
+ * This allows the app to determine which tank a molting alert belongs to
+ * based on the camera_ip field from the ML detection system.
+ */
+object CameraToTankMapper {
+
+    /**
+     * Mapping of camera IP addresses to tank IDs.
+     * Add new camera-tank pairs here as tanks are added.
+     */
+    private val cameraToTankMap: Map<String, String> = mapOf(
+        "192.168.8.115" to "tank1"
+        // Add more mappings as needed:
+        // "192.168.8.116" to "tank2",
+        // "192.168.8.117" to "tank3"
+    )
+
+    /**
+     * Reverse mapping for looking up camera IP by tank ID.
+     */
+    private val tankToCameraMap: Map<String, String> = cameraToTankMap.entries
+        .associate { (camera, tank) -> tank to camera }
+
+    /**
+     * Gets the tank ID for a given camera IP address.
+     * @return The tank ID, or null if the camera IP is not mapped.
+     */
+    fun getTankId(cameraIp: String): String? {
+        return cameraToTankMap[cameraIp]
+    }
+
+    /**
+     * Gets the tank ID for a given camera IP address, with a default fallback.
+     * @return The tank ID, or a generated ID based on the IP if not mapped.
+     */
+    fun getTankIdOrDefault(cameraIp: String): String {
+        return cameraToTankMap[cameraIp] ?: "tank_${cameraIp.replace(".", "_")}"
+    }
+
+    /**
+     * Gets the camera IP address for a given tank ID.
+     * @return The camera IP, or null if the tank ID is not mapped.
+     */
+    fun getCameraIp(tankId: String): String? {
+        return tankToCameraMap[tankId]
+    }
+
+    /**
+     * Checks if a camera IP is mapped to a known tank.
+     */
+    fun isKnownCamera(cameraIp: String): Boolean {
+        return cameraToTankMap.containsKey(cameraIp)
+    }
+
+    /**
+     * Gets all known tank IDs.
+     */
+    fun getAllTankIds(): Set<String> {
+        return tankToCameraMap.keys
+    }
+}
+
+--------------------------------------------------------------------------------
+FILE 3: app/src/main/java/com/crabtrack/app/data/repository/MoltingAlertRepository.kt
+--------------------------------------------------------------------------------
+
+package com.crabtrack.app.data.repository
+
+import com.crabtrack.app.data.model.MoltingAlert
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Repository for managing molting alerts.
+ *
+ * Part A: Listens to global /molting_alerts path (where ML system writes)
+ *         and copies high-confidence alerts to user's personal path.
+ *
+ * Part B: Provides Flow of alerts from user's personal path for dashboard display.
+ */
+@Singleton
+class MoltingAlertRepository @Inject constructor(
+    private val firebaseAuth: FirebaseAuth,
+    private val firebaseDatabase: FirebaseDatabase
+) {
+    companion object {
+        private const val TAG = "MoltingAlertRepository"
+        private const val GLOBAL_ALERTS_PATH = "molting_alerts"
+        private const val CONFIDENCE_THRESHOLD = 0.80
+    }
+
+    // Track processed alert IDs to avoid duplicates
+    private val processedAlertIds = mutableSetOf<String>()
+
+    /**
+     * Starts monitoring the global /molting_alerts path.
+     * When a high-confidence alert is detected, it's copied to the user's path.
+     */
+    fun startMonitoring() {
+        val currentUser = firebaseAuth.currentUser
+        if (currentUser == null) {
+            android.util.Log.w(TAG, "Cannot start monitoring: user not authenticated")
+            return
+        }
+
+        val globalAlertsRef = firebaseDatabase.reference.child(GLOBAL_ALERTS_PATH)
+
+        globalAlertsRef.addChildEventListener(object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                processGlobalAlert(snapshot, currentUser.uid)
+            }
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                processGlobalAlert(snapshot, currentUser.uid)
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                // Optionally handle removal
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+                // Not typically used
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                android.util.Log.e(TAG, "Global alerts listener cancelled: ${error.message}")
+            }
+        })
+
+        android.util.Log.i(TAG, "Started monitoring global molting alerts")
+    }
+
+    /**
+     * Processes an alert from the global path and copies it to user's path if high confidence.
+     */
+    private fun processGlobalAlert(snapshot: DataSnapshot, userId: String) {
+        val alertId = snapshot.key ?: return
+
+        // Skip if already processed
+        if (processedAlertIds.contains(alertId)) {
+            return
+        }
+
+        val alert = MoltingAlert.fromSnapshot(snapshot)
+        if (alert == null) {
+            android.util.Log.w(TAG, "Failed to parse alert: $alertId")
+            return
+        }
+
+        android.util.Log.d(TAG, "Processing alert: $alertId, confidence: ${alert.confidence}")
+
+        // Only copy high-confidence alerts
+        if (alert.isHighConfidence()) {
+            copyAlertToUserPath(alert, userId)
+            processedAlertIds.add(alertId)
+            android.util.Log.i(TAG, "High confidence alert copied: $alertId (${alert.confidence * 100}%)")
+        } else {
+            android.util.Log.d(TAG, "Alert below threshold: $alertId (${alert.confidence * 100}%)")
+        }
+    }
+
+    /**
+     * Copies an alert to the user's personal path.
+     */
+    private fun copyAlertToUserPath(alert: MoltingAlert, userId: String) {
+        val userAlertRef = firebaseDatabase.reference
+            .child("users")
+            .child(userId)
+            .child("molting_alerts")
+            .child(alert.id)
+
+        userAlertRef.setValue(alert.toFirebaseMap())
+            .addOnSuccessListener {
+                android.util.Log.i(TAG, "Alert written to user path: ${alert.id}")
+            }
+            .addOnFailureListener { e ->
+                android.util.Log.e(TAG, "Failed to write alert to user path: ${e.message}")
+            }
+    }
+
+    /**
+     * Flow of molting alerts from the user's personal path.
+     * Emits updates whenever alerts change.
+     */
+    val userAlerts: Flow<List<MoltingAlert>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+        if (currentUser == null) {
+            android.util.Log.w(TAG, "Cannot get user alerts: user not authenticated")
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val userAlertsRef = firebaseDatabase.reference
+            .child("users")
+            .child(currentUser.uid)
+            .child("molting_alerts")
+            .orderByChild("timestamp")
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val alerts = mutableListOf<MoltingAlert>()
+
+                for (alertSnapshot in snapshot.children) {
+                    val alert = MoltingAlert.fromSnapshot(alertSnapshot)
+                    if (alert != null && alert.status == "unread") {
+                        alerts.add(alert)
+                    }
+                }
+
+                // Sort by timestamp descending (newest first)
+                val sortedAlerts = alerts.sortedByDescending { it.timestamp }
+
+                android.util.Log.d(TAG, "User alerts updated: ${sortedAlerts.size} unread alerts")
+                trySend(sortedAlerts)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                android.util.Log.e(TAG, "User alerts listener cancelled: ${error.message}")
+                trySend(emptyList())
+            }
+        }
+
+        userAlertsRef.addValueEventListener(listener)
+        android.util.Log.i(TAG, "Started listening to user alerts")
+
+        awaitClose {
+            userAlertsRef.removeEventListener(listener)
+            android.util.Log.i(TAG, "Stopped listening to user alerts")
+        }
+    }
+
+    /**
+     * Gets alerts for a specific tank.
+     */
+    fun alertsForTank(tankId: String): Flow<List<MoltingAlert>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+        if (currentUser == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val userAlertsRef = firebaseDatabase.reference
+            .child("users")
+            .child(currentUser.uid)
+            .child("molting_alerts")
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val alerts = mutableListOf<MoltingAlert>()
+
+                for (alertSnapshot in snapshot.children) {
+                    val alert = MoltingAlert.fromSnapshot(alertSnapshot)
+                    if (alert != null && alert.tankId == tankId && alert.status == "unread") {
+                        alerts.add(alert)
+                    }
+                }
+
+                trySend(alerts.sortedByDescending { it.timestamp })
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                trySend(emptyList())
+            }
+        }
+
+        userAlertsRef.addValueEventListener(listener)
+
+        awaitClose {
+            userAlertsRef.removeEventListener(listener)
+        }
+    }
+
+    /**
+     * Marks an alert as read.
+     */
+    suspend fun markAsRead(alertId: String) {
+        val currentUser = firebaseAuth.currentUser ?: return
+
+        try {
+            firebaseDatabase.reference
+                .child("users")
+                .child(currentUser.uid)
+                .child("molting_alerts")
+                .child(alertId)
+                .child("status")
+                .setValue("read")
+                .await()
+
+            android.util.Log.i(TAG, "Alert marked as read: $alertId")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Failed to mark alert as read: ${e.message}")
+        }
+    }
+
+    /**
+     * Deletes an alert from the user's path.
+     */
+    suspend fun deleteAlert(alertId: String) {
+        val currentUser = firebaseAuth.currentUser ?: return
+
+        try {
+            firebaseDatabase.reference
+                .child("users")
+                .child(currentUser.uid)
+                .child("molting_alerts")
+                .child(alertId)
+                .removeValue()
+                .await()
+
+            android.util.Log.i(TAG, "Alert deleted: $alertId")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Failed to delete alert: ${e.message}")
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+FILE 4: app/src/main/res/layout/item_molting_alert_card.xml
+--------------------------------------------------------------------------------
+
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/molting_alert_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="@color/critical_background"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/critical_text"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <!-- Crab emoji indicator -->
+        <TextView
+            android:id="@+id/emoji_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🦀"
+            android:textSize="24sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Tank name -->
+        <TextView
+            android:id="@+id/text_tank_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="@color/critical_text"
+            android:textStyle="bold"
+            tools:text="Tank 1"
+            app:layout_constraintStart_toEndOf="@id/emoji_indicator"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/badge_confidence" />
+
+        <!-- Detection class / status -->
+        <TextView
+            android:id="@+id/text_detection_class"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/critical_text"
+            tools:text="Molting Detected"
+            app:layout_constraintStart_toEndOf="@id/emoji_indicator"
+            app:layout_constraintTop_toBottomOf="@id/text_tank_name"
+            app:layout_constraintEnd_toStartOf="@id/badge_confidence" />
+
+        <!-- Timestamp -->
+        <TextView
+            android:id="@+id/text_timestamp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/text_secondary"
+            tools:text="2 minutes ago"
+            app:layout_constraintStart_toEndOf="@id/emoji_indicator"
+            app:layout_constraintTop_toBottomOf="@id/text_detection_class"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/badge_confidence" />
+
+        <!-- Confidence badge -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/badge_confidence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            app:chipBackgroundColor="@color/critical_text"
+            app:chipMinHeight="24dp"
+            app:chipCornerRadius="12dp"
+            app:textEndPadding="8dp"
+            app:textStartPadding="8dp"
+            tools:text="81%"
+            app:layout_constraintEnd_toStartOf="@id/icon_chevron"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Chevron for navigation hint -->
+        <ImageView
+            android:id="@+id/icon_chevron"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_chevron_right"
+            android:contentDescription="View tank"
+            app:tint="@color/critical_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>
+
+--------------------------------------------------------------------------------
+FILE 5: app/src/main/res/drawable/ic_chevron_right.xml
+--------------------------------------------------------------------------------
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M9.29,6.71a1,1 0,0 0,0 1.41L13.17,12l-3.88,3.88a1,1 0,1 0,1.41 1.41l4.59,-4.59a1,1 0,0 0,0 -1.41L10.7,6.71a1,1 0,0 0,-1.41 0z"/>
+</vector>
+
+--------------------------------------------------------------------------------
+FILE 6: app/src/main/java/com/crabtrack/app/presentation/dashboard/adapter/MoltingAlertAdapter.kt
+--------------------------------------------------------------------------------
+
+package com.crabtrack.app.presentation.dashboard.adapter
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import com.crabtrack.app.data.model.MoltingAlert
+import com.crabtrack.app.databinding.ItemMoltingAlertCardBinding
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
+/**
+ * Adapter for displaying molting alerts in a RecyclerView.
+ */
+class MoltingAlertAdapter(
+    private val onAlertClicked: (MoltingAlert) -> Unit
+) : ListAdapter<MoltingAlert, MoltingAlertAdapter.MoltingAlertViewHolder>(MoltingAlertDiffCallback()) {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MoltingAlertViewHolder {
+        val binding = ItemMoltingAlertCardBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return MoltingAlertViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: MoltingAlertViewHolder, position: Int) {
+        holder.bind(getItem(position), onAlertClicked)
+    }
+
+    class MoltingAlertViewHolder(
+        private val binding: ItemMoltingAlertCardBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(alert: MoltingAlert, onAlertClicked: (MoltingAlert) -> Unit) {
+            binding.apply {
+                // Tank name - format tankId nicely
+                val tankNumber = alert.tankId.replace("tank", "").replace("_", " ")
+                textTankName.text = "Tank $tankNumber"
+
+                // Detection class
+                val detectionText = when (alert.detectionClass) {
+                    "Molting-Crab" -> "Molting Detected"
+                    else -> alert.detectionClass
+                }
+                textDetectionClass.text = detectionText
+
+                // Confidence badge
+                val confidencePercent = (alert.confidence * 100).toInt()
+                badgeConfidence.text = "$confidencePercent%"
+
+                // Timestamp - format nicely
+                textTimestamp.text = formatTimestamp(alert.timestamp)
+
+                // Click handler
+                root.setOnClickListener {
+                    onAlertClicked(alert)
+                }
+            }
+        }
+
+        private fun formatTimestamp(isoTimestamp: String): String {
+            return try {
+                val zonedDateTime = ZonedDateTime.parse(isoTimestamp)
+                val formatter = DateTimeFormatter.ofPattern("MMM d, h:mm a")
+                zonedDateTime.format(formatter)
+            } catch (e: DateTimeParseException) {
+                // Fallback if parsing fails
+                isoTimestamp.substringBefore("T")
+            }
+        }
+    }
+
+    class MoltingAlertDiffCallback : DiffUtil.ItemCallback<MoltingAlert>() {
+        override fun areItemsTheSame(oldItem: MoltingAlert, newItem: MoltingAlert): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: MoltingAlert, newItem: MoltingAlert): Boolean {
+            return oldItem == newItem
+        }
+    }
+}
+
+================================================================================
+MODIFIED FILES
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE 7: app/src/main/res/layout/fragment_dashboard.xml (MODIFIED)
+--------------------------------------------------------------------------------
+
+Added molting alerts section between alert_indicator and swipe_refresh_layout:
+
+    <!-- Molting Alerts Section -->
+    <LinearLayout
+        android:id="@+id/molting_alerts_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@+id/alert_indicator">
+
+        <TextView
+            android:id="@+id/text_molting_alerts_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Molting Alerts"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_molting_alerts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:nestedScrollingEnabled="false" />
+
+    </LinearLayout>
+
+Also updated swipe_refresh_layout constraint:
+    app:layout_constraintTop_toBottomOf="@+id/molting_alerts_container"
+
+--------------------------------------------------------------------------------
+FILE 8: app/src/main/java/com/crabtrack/app/presentation/dashboard/DashboardViewModel.kt (MODIFIED)
+--------------------------------------------------------------------------------
+
+Added navigation event sealed class:
+
+    sealed class DashboardNavigationEvent {
+        data class NavigateToCamera(val tankId: String) : DashboardNavigationEvent()
+    }
+
+Added to DashboardUiState:
+
+    data class DashboardUiState(
+        val latestReading: WaterReading? = null,
+        val overallSeverity: AlertSeverity = AlertSeverity.INFO,
+        val moltingAlerts: List<MoltingAlert> = emptyList(),    // NEW
+        val hasMoltingAlerts: Boolean = false,                   // NEW
+        val isLoading: Boolean = false,
+        val errorMessage: String? = null
+    )
+
+Added to constructor:
+
+    private val moltingAlertRepository: MoltingAlertRepository
+
+Added navigation events flow:
+
+    private val _navigationEvents = MutableSharedFlow<DashboardNavigationEvent>()
+    val navigationEvents: SharedFlow<DashboardNavigationEvent> = _navigationEvents.asSharedFlow()
+
+Added in init block:
+
+    startMoltingAlertMonitoring()
+    collectMoltingAlerts()
+
+Added methods:
+
+    private fun startMoltingAlertMonitoring() {
+        moltingAlertRepository.startMonitoring()
+    }
+
+    private fun collectMoltingAlerts() {
+        viewModelScope.launch {
+            moltingAlertRepository.userAlerts
+                .catch { exception ->
+                    android.util.Log.e("DashboardViewModel", "Error collecting molting alerts: ${exception.message}", exception)
+                }
+                .collect { alerts ->
+                    _uiState.value = _uiState.value.copy(
+                        moltingAlerts = alerts,
+                        hasMoltingAlerts = alerts.isNotEmpty()
+                    )
+                }
+        }
+    }
+
+    fun onMoltingAlertClicked(alert: MoltingAlert) {
+        viewModelScope.launch {
+            moltingAlertRepository.markAsRead(alert.id)
+            _navigationEvents.emit(DashboardNavigationEvent.NavigateToCamera(alert.tankId))
+        }
+    }
+
+--------------------------------------------------------------------------------
+FILE 9: app/src/main/java/com/crabtrack/app/presentation/dashboard/DashboardFragment.kt (MODIFIED)
+--------------------------------------------------------------------------------
+
+Added adapter property:
+
+    private lateinit var moltingAlertAdapter: MoltingAlertAdapter
+
+Added in onViewCreated:
+
+    setupMoltingAlertsRecyclerView()
+
+Added method:
+
+    private fun setupMoltingAlertsRecyclerView() {
+        moltingAlertAdapter = MoltingAlertAdapter { alert ->
+            viewModel.onMoltingAlertClicked(alert)
+        }
+        binding.recyclerViewMoltingAlerts.apply {
+            adapter = moltingAlertAdapter
+            layoutManager = LinearLayoutManager(requireContext())
+        }
+    }
+
+Added in observeUiState (inside repeatOnLifecycle):
+
+    launch {
+        viewModel.navigationEvents.collect { event ->
+            handleNavigationEvent(event)
+        }
+    }
+
+Added methods:
+
+    private fun handleNavigationEvent(event: DashboardNavigationEvent) {
+        when (event) {
+            is DashboardNavigationEvent.NavigateToCamera -> {
+                navigateToCamera(event.tankId)
+            }
+        }
+    }
+
+    private fun navigateToCamera(tankId: String) {
+        try {
+            val action = DashboardFragmentDirections.actionDashboardToCamera(tankId)
+            findNavController().navigate(action)
+        } catch (e: Exception) {
+            findNavController().navigate(R.id.cameraFragment)
+        }
+    }
+
+Added in updateUI:
+
+    // Update molting alerts section
+    binding.moltingAlertsContainer.visibility = if (uiState.hasMoltingAlerts) {
+        View.VISIBLE
+    } else {
+        View.GONE
+    }
+    moltingAlertAdapter.submitList(uiState.moltingAlerts)
+
+--------------------------------------------------------------------------------
+FILE 10: app/src/main/res/navigation/main_nav_graph.xml (MODIFIED)
+--------------------------------------------------------------------------------
+
+Added action to dashboardFragment:
+
+    <action
+        android:id="@+id/action_dashboard_to_camera"
+        app:destination="@id/cameraFragment" />
+
+Added argument to cameraFragment:
+
+    <fragment
+        android:id="@+id/cameraFragment"
+        android:name="com.crabtrack.app.ui.camera.CameraFragment"
+        android:label="Live Stream">
+
+        <argument
+            android:name="tankId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+    </fragment>
+
+--------------------------------------------------------------------------------
+FILE 11: app/src/main/java/com/crabtrack/app/ui/camera/CameraFragment.kt (MODIFIED)
+--------------------------------------------------------------------------------
+
+Added import:
+
+    import androidx.core.content.ContextCompat
+
+Added property:
+
+    private var selectedTankId: String? = null
+
+Added in onViewCreated (before setupClickListeners):
+
+    handleTankIdArgument()
+
+Added methods:
+
+    /**
+     * Handle tankId argument passed from dashboard when a molting alert is tapped.
+     * Selects the appropriate tank chip and shows a molting indicator.
+     */
+    private fun handleTankIdArgument() {
+        selectedTankId = arguments?.getString("tankId")
+
+        selectedTankId?.let { tankId ->
+            android.util.Log.i("CameraFragment", "Navigated with tankId: $tankId")
+            selectTank(tankId)
+        }
+    }
+
+    /**
+     * Selects a tank and updates the UI accordingly.
+     */
+    private fun selectTank(tankId: String) {
+        android.util.Log.i("CameraFragment", "Selecting tank: $tankId")
+
+        when (tankId) {
+            "tank1" -> {
+                binding.tank1Chip.isChecked = true
+                updateCrabInfoDisplay()
+                showMoltingIndicator(true)
+            }
+            else -> {
+                android.util.Log.w("CameraFragment", "Unknown tank ID: $tankId")
+            }
+        }
+    }
+
+    /**
+     * Shows or hides a molting indicator on the crab details card.
+     */
+    private fun showMoltingIndicator(show: Boolean) {
+        if (show) {
+            binding.crabDetailsCard.strokeWidth = 4
+            binding.crabDetailsCard.strokeColor = ContextCompat.getColor(requireContext(), R.color.critical_text)
+            android.util.Log.i("CameraFragment", "Molting indicator shown")
+        } else {
+            binding.crabDetailsCard.strokeWidth = 0
+        }
+    }
+
+================================================================================
+DATA FLOW SUMMARY
+================================================================================
+
+1. ML Detection System writes to /molting_alerts/{alertId}
+   {
+     "camera_ip": "192.168.8.115",
+     "confidence": 0.8058044910430908,
+     "detection_class": "Molting-Crab",
+     "status": "unread",
+     "timestamp": "2025-12-03T19:30:05.718844+08:00"
+   }
+
+2. MoltingAlertRepository.startMonitoring() listens to /molting_alerts
+   - Uses ChildEventListener to detect new/changed alerts
+   - When confidence >= 80%:
+     - Maps camera_ip to tankId using CameraToTankMapper
+     - Writes alert to users/{uid}/molting_alerts/{alertId}
+
+3. MoltingAlertRepository.userAlerts Flow listens to users/{uid}/molting_alerts
+   - Emits List<MoltingAlert> sorted by timestamp (newest first)
+   - Filters to only "unread" status alerts
+
+4. DashboardViewModel collects userAlerts Flow
+   - Updates DashboardUiState with moltingAlerts list
+   - Sets hasMoltingAlerts = true when alerts exist
+
+5. DashboardFragment observes uiState
+   - Shows/hides molting_alerts_container based on hasMoltingAlerts
+   - Submits alerts list to MoltingAlertAdapter
+
+6. User taps alert card
+   - MoltingAlertAdapter calls onAlertClicked callback
+   - DashboardFragment calls viewModel.onMoltingAlertClicked(alert)
+   - ViewModel marks alert as read and emits NavigateToCamera event
+   - Fragment navigates to CameraFragment with tankId argument
+
+7. CameraFragment receives tankId argument
+   - handleTankIdArgument() extracts tankId from arguments
+   - selectTank() checks the appropriate tank chip
+   - showMoltingIndicator() adds red border to crab details card
+
+================================================================================

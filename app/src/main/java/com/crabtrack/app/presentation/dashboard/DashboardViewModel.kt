@@ -4,8 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crabtrack.app.data.model.Alert
 import com.crabtrack.app.data.model.AlertSeverity
+import com.crabtrack.app.data.model.CleaningCardStatus
+import com.crabtrack.app.data.model.FarmCleaningStatus
+import com.crabtrack.app.data.model.FeedingCardStatus
+import com.crabtrack.app.data.model.MoltingAlert
+import com.crabtrack.app.data.model.TankFeedingStatus
 import com.crabtrack.app.data.model.Thresholds
 import com.crabtrack.app.data.model.WaterReading
+import com.crabtrack.app.data.repository.CleaningReminderRepository
+import com.crabtrack.app.data.repository.FeedingStatusRepository
+import com.crabtrack.app.data.repository.MoltingAlertRepository
 import com.crabtrack.app.data.repository.TelemetryRepository
 import com.crabtrack.app.domain.usecase.EvaluateThresholdsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,6 +37,12 @@ sealed class AlertEvent {
 data class DashboardUiState(
     val latestReading: WaterReading? = null,
     val overallSeverity: AlertSeverity = AlertSeverity.INFO,
+    val moltingAlerts: List<MoltingAlert> = emptyList(),
+    val hasMoltingAlerts: Boolean = false,
+    val feedingStatuses: List<TankFeedingStatus> = emptyList(),
+    val hasFeedingAlerts: Boolean = false,
+    val cleaningStatus: FarmCleaningStatus? = null,
+    val hasCleaningAlerts: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
@@ -36,6 +50,9 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val telemetryRepository: TelemetryRepository,
+    private val moltingAlertRepository: MoltingAlertRepository,
+    private val feedingStatusRepository: FeedingStatusRepository,
+    private val cleaningReminderRepository: CleaningReminderRepository,
     private val evaluateThresholdsUseCase: EvaluateThresholdsUseCase,
     private val thresholdsFlow: Flow<Thresholds>
 ) : ViewModel() {
@@ -75,7 +92,7 @@ class DashboardViewModel @Inject constructor(
                     android.util.Log.i("DashboardViewModel", "Reading: pH=${reading.pH}, temp=${reading.temperatureC}°C, alerts=${alerts.size}")
 
                     val severity = alerts.maxByOrNull { it.severity.ordinal }?.severity ?: AlertSeverity.INFO
-                    _uiState.value = DashboardUiState(
+                    _uiState.value = _uiState.value.copy(
                         latestReading = reading,
                         overallSeverity = severity,
                         isLoading = false,
@@ -106,6 +123,10 @@ class DashboardViewModel @Inject constructor(
     init {
         android.util.Log.i("DashboardViewModel", "=== DASHBOARD VIEWMODEL INITIALIZED ===")
         startTelemetryCollection()
+        startMoltingAlertMonitoring()
+        collectMoltingAlerts()
+        collectFeedingStatuses()
+        collectCleaningStatus()
         // Keep track of current thresholds for parameter evaluation
         viewModelScope.launch {
             android.util.Log.i("DashboardViewModel", "Collecting thresholds flow")
@@ -115,11 +136,116 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }
-    
+
+    /**
+     * Starts monitoring global /molting_alerts and copying high-confidence alerts to user path.
+     */
+    private fun startMoltingAlertMonitoring() {
+        moltingAlertRepository.startMonitoring()
+        android.util.Log.i("DashboardViewModel", "Started molting alert monitoring")
+    }
+
+    /**
+     * Collects molting alerts from user's path and updates UI state.
+     */
+    private fun collectMoltingAlerts() {
+        viewModelScope.launch {
+            moltingAlertRepository.userAlerts
+                .catch { exception ->
+                    android.util.Log.e("DashboardViewModel", "Error collecting molting alerts: ${exception.message}", exception)
+                }
+                .collect { alerts ->
+                    android.util.Log.i("DashboardViewModel", "Molting alerts received: ${alerts.size}")
+                    _uiState.value = _uiState.value.copy(
+                        moltingAlerts = alerts,
+                        hasMoltingAlerts = alerts.isNotEmpty()
+                    )
+                }
+        }
+    }
+
     fun getParameterSeverity(parameter: String): AlertSeverity {
         val reading = _uiState.value.latestReading ?: return AlertSeverity.INFO
         val thresholds = currentThresholds ?: return AlertSeverity.INFO
         val alerts = evaluateThresholdsUseCase.evaluateAll(reading, thresholds)
         return alerts.find { it.parameter == parameter }?.severity ?: AlertSeverity.INFO
+    }
+
+    /**
+     * Collects feeding statuses for all tanks and updates UI state.
+     */
+    private fun collectFeedingStatuses() {
+        viewModelScope.launch {
+            feedingStatusRepository.allTankFeedingStatuses
+                .catch { exception ->
+                    android.util.Log.e("DashboardViewModel", "Error collecting feeding statuses: ${exception.message}", exception)
+                }
+                .collect { statuses ->
+                    val hasAlerts = statuses.any { it.overallStatus == FeedingCardStatus.OVERDUE }
+                    _uiState.value = _uiState.value.copy(
+                        feedingStatuses = statuses,
+                        hasFeedingAlerts = hasAlerts
+                    )
+                    android.util.Log.i("DashboardViewModel", "Feeding statuses updated: ${statuses.size} tanks, hasAlerts=$hasAlerts")
+                }
+        }
+    }
+
+    /**
+     * Confirms a feeding for a specific tank.
+     */
+    fun confirmFeeding(tankId: String, feedingLogId: String) {
+        viewModelScope.launch {
+            feedingStatusRepository.confirmFeeding(tankId, feedingLogId)
+                .onSuccess {
+                    android.util.Log.i("DashboardViewModel", "Feeding confirmed: $feedingLogId for tank $tankId")
+                }
+                .onFailure { e ->
+                    android.util.Log.e("DashboardViewModel", "Failed to confirm feeding: ${e.message}", e)
+                }
+        }
+    }
+
+    /**
+     * Called when a feeding card is clicked (for schedule configuration).
+     */
+    fun onFeedingCardClicked(tankId: String) {
+        android.util.Log.i("DashboardViewModel", "Feeding card clicked for tank: $tankId")
+        // TODO: Navigate to feeding schedule configuration screen
+    }
+
+    /**
+     * Collects cleaning status and updates UI state.
+     */
+    private fun collectCleaningStatus() {
+        viewModelScope.launch {
+            cleaningReminderRepository.farmCleaningStatus
+                .catch { exception ->
+                    android.util.Log.e("DashboardViewModel", "Error collecting cleaning status: ${exception.message}", exception)
+                }
+                .collect { status ->
+                    val hasAlerts = status?.overallStatus == CleaningCardStatus.OVERDUE
+                    _uiState.value = _uiState.value.copy(
+                        cleaningStatus = status,
+                        hasCleaningAlerts = hasAlerts
+                    )
+                    android.util.Log.i("DashboardViewModel", "Cleaning status updated: ${status?.todayLogs?.size ?: 0} logs, hasAlerts=$hasAlerts")
+                }
+        }
+    }
+
+    /**
+     * Confirms a cleaning (marks as complete).
+     */
+    fun confirmCleaning(cleaningLogId: String) {
+        viewModelScope.launch {
+            cleaningReminderRepository.confirmCleaning(cleaningLogId)
+                .onSuccess {
+                    android.util.Log.i("DashboardViewModel", "Cleaning confirmed: $cleaningLogId")
+                }
+                .onFailure { e ->
+                    android.util.Log.e("DashboardViewModel", "Failed to confirm cleaning: ${e.message}", e)
+                }
+        }
     }
 }

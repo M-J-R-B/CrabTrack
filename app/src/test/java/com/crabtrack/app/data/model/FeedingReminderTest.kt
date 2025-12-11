@@ -26,7 +26,7 @@ class FeedingReminderTest {
             date = date,
             time = time,
             timestamp = timestamp,
-            recurrence = RecurrenceType.NONE,
+            recurrence = RecurrenceType.ONE_TIME,
             status = "scheduled"
         )
 
@@ -35,7 +35,7 @@ class FeedingReminderTest {
         assertEquals(date, reminder.date)
         assertEquals(time, reminder.time)
         assertEquals(timestamp, reminder.timestamp)
-        assertEquals(RecurrenceType.NONE, reminder.recurrence)
+        assertEquals(RecurrenceType.ONE_TIME, reminder.recurrence)
         assertEquals("One-time", reminder.getRecurrenceDisplayText())
     }
 
@@ -82,7 +82,7 @@ class FeedingReminderTest {
             date = "2025-10-28",
             time = "15:00",
             timestamp = futureTimestamp,
-            recurrence = RecurrenceType.NONE,
+            recurrence = RecurrenceType.ONE_TIME,
             status = "scheduled"
         )
 
@@ -99,7 +99,7 @@ class FeedingReminderTest {
             date = "2025-10-26",
             time = "10:00",
             timestamp = pastTimestamp,
-            recurrence = RecurrenceType.NONE,
+            recurrence = RecurrenceType.ONE_TIME,
             status = "scheduled"
         )
 
@@ -116,7 +116,7 @@ class FeedingReminderTest {
             date = "2025-10-28",
             time = "12:00",
             timestamp = futureTimestamp,
-            recurrence = RecurrenceType.NONE,
+            recurrence = RecurrenceType.ONE_TIME,
             status = "completed"
         )
 
@@ -171,7 +171,7 @@ class FeedingReminderTest {
     @Test
     fun `notification - recurrence type is serializable for intent extras`() {
         // Given: Different recurrence types
-        val types = listOf(RecurrenceType.NONE, RecurrenceType.DAILY, RecurrenceType.WEEKLY)
+        val types = listOf(RecurrenceType.ONE_TIME, RecurrenceType.DAILY, RecurrenceType.WEEKLY)
 
         // Then: All should have name property for serialization
         types.forEach { type ->

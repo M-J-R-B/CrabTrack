@@ -33,6 +33,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.crabtrack.app.data.model.ActionType
 import com.crabtrack.app.data.model.Thresholds
 import com.crabtrack.app.data.model.RecurrenceType
 import com.crabtrack.app.databinding.FragmentSettingsBinding
@@ -575,8 +576,31 @@ class SettingsFragment : Fragment() {
                         }
                     }
                 }
+
+                // Collection for test alert messages
+                launch {
+                    viewModel.testAlertMessage.collect { message ->
+                        message?.let {
+                            Snackbar.make(binding.root, it, Snackbar.LENGTH_SHORT).show()
+                            viewModel.clearTestAlertMessage()
+                        }
+                    }
+                }
+
+                // Collection for test alert generation state
+                launch {
+                    viewModel.isGeneratingTestAlert.collect { isGenerating ->
+                        updateTestAlertButtonState(isGenerating)
+                    }
+                }
             }
         }
+    }
+
+    private fun updateTestAlertButtonState(isGenerating: Boolean) {
+        if (_binding == null) return
+        binding.buttonGenerateTestAlert.isEnabled = !isGenerating
+        binding.buttonGenerateTestAlert.text = if (isGenerating) "Generating..." else getString(R.string.select_tank_generate)
     }
 
     private fun setupSwipeRefresh() {
@@ -1041,6 +1065,14 @@ class SettingsFragment : Fragment() {
             toggleFeedingReminder()
         }
 
+        // Developer Tools section
+        binding.developerToolsHeader.setOnClickListener {
+            toggleDeveloperTools()
+        }
+
+        binding.buttonGenerateTestAlert.setOnClickListener {
+            showTankSelectionDialog()
+        }
 
         binding.buttonLogout.setOnClickListener {
             val dialogView = layoutInflater.inflate(R.layout.dialog_logout_confirm, null)
@@ -1136,16 +1168,51 @@ class SettingsFragment : Fragment() {
             timePicker.show()
         }
 
+        // Disable date input when Daily is selected (date not needed for daily reminders)
+        binding.recurrenceRadioGroup.setOnCheckedChangeListener { _, checkedId ->
+            val isDaily = checkedId == binding.radioDaily.id
+            binding.feedingDateInput.isEnabled = !isDaily
+            if (isDaily) {
+                binding.feedingDateInput.setText("")
+            }
+        }
+
         binding.buttonSetFeedingReminder.setOnClickListener {
             val date = binding.feedingDateInput.text.toString()
             val time = binding.feedingTimeInput.text.toString()
 
-            if (date.isBlank() || time.isBlank()) {
-                showProfileSuccessDialog(
-                    title = "Invalid Input!",
-                    message = "Please select both Date and Time"
-                )
-                return@setOnClickListener
+            // ✅ Recurrence (One-time / Daily / Weekly) - check first for validation logic
+            val recurrenceType = when (binding.recurrenceRadioGroup.checkedRadioButtonId) {
+                binding.radioDaily.id -> RecurrenceType.DAILY
+                binding.radioWeekly.id -> RecurrenceType.WEEKLY
+                else -> RecurrenceType.ONE_TIME
+            }
+
+            // ✅ Action type (Feed / Clean)
+            val actionType = when (binding.actionRadioGroup.checkedRadioButtonId) {
+                binding.radioFeed.id -> "FEED"
+                binding.radioClean.id -> "CLEAN"
+                else -> "FEED"
+            }
+
+            // For DAILY reminders, date is not required (use today's date)
+            // For other types, both date and time are required
+            if (recurrenceType == RecurrenceType.DAILY) {
+                if (time.isBlank()) {
+                    showProfileSuccessDialog(
+                        title = "Invalid Input!",
+                        message = "Please select a Time"
+                    )
+                    return@setOnClickListener
+                }
+            } else {
+                if (date.isBlank() || time.isBlank()) {
+                    showProfileSuccessDialog(
+                        title = "Invalid Input!",
+                        message = "Please select both Date and Time"
+                    )
+                    return@setOnClickListener
+                }
             }
 
             val user = FirebaseAuth.getInstance().currentUser
@@ -1157,22 +1224,15 @@ class SettingsFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // ✅ Recurrence (One-time / Daily / Weekly)
-            val recurrenceType = when (binding.recurrenceRadioGroup.checkedRadioButtonId) {
-                binding.radioDaily.id -> RecurrenceType.DAILY
-                binding.radioWeekly.id -> RecurrenceType.WEEKLY
-                else -> RecurrenceType.NONE
-            }
-
-            // ✅ Action type (Feed / Clean)
-            val actionType = when (binding.actionRadioGroup.checkedRadioButtonId) {
-                binding.radioFeed.id -> "FEED"
-                binding.radioClean.id -> "CLEAN"
-                else -> "FEED"
-            }
-
             // ✅ Parse date + time
-            val dateParts = date.split("-")   // yyyy-MM-dd
+            // For DAILY reminders, use today's date
+            val dateToUse = if (recurrenceType == RecurrenceType.DAILY) {
+                java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+            } else {
+                date
+            }
+
+            val dateParts = dateToUse.split("-")   // yyyy-MM-dd
             val timeParts = time.split(":")   // HH:mm
 
             if (dateParts.size != 3 || timeParts.size != 2) {
@@ -1194,31 +1254,41 @@ class SettingsFragment : Fragment() {
             }
 
             val triggerTime = calendar.timeInMillis
-            if (triggerTime <= System.currentTimeMillis()) {
-                showProfileSuccessDialog(
-                    title = "Invalid Input!",
-                    message = "Please select a Future Time"
-                )
-                return@setOnClickListener
+
+            // For DAILY reminders, if time already passed today, schedule for tomorrow
+            val finalTriggerTime = if (recurrenceType == RecurrenceType.DAILY && triggerTime <= System.currentTimeMillis()) {
+                calendar.add(Calendar.DAY_OF_YEAR, 1)
+                calendar.timeInMillis
+            } else {
+                if (triggerTime <= System.currentTimeMillis()) {
+                    showProfileSuccessDialog(
+                        title = "Invalid Input!",
+                        message = "Please select a Future Time"
+                    )
+                    return@setOnClickListener
+                }
+                triggerTime
             }
 
             // ✅ Show your custom confirm dialog BEFORE saving
-            showSaveScheduleConfirm(date, time, recurrenceType, actionType) {
+            showSaveScheduleConfirm(dateToUse, time, recurrenceType, actionType) {
 
                 val reminderData = mapOf(
-                    "date" to date,
+                    "date" to dateToUse,
                     "time" to time,
-                    "timestamp" to triggerTime,
+                    "timestamp" to finalTriggerTime,
                     "recurrence" to recurrenceType.name,
                     "actionType" to actionType,
                     "status" to "scheduled",
                     "createdAt" to System.currentTimeMillis()
                 )
 
+                // Route CLEAN reminders to cleaning_reminders/, FEED to feeding_reminders/
+                val reminderPath = if (actionType == ActionType.CLEAN.name) "cleaning_reminders" else "feeding_reminders"
                 val remindersRef = FirebaseDatabase.getInstance()
                     .getReference("users")
                     .child(user.uid)
-                    .child("feeding_reminders")
+                    .child(reminderPath)
                     .push()
 
                 val reminderId = remindersRef.key ?: return@showSaveScheduleConfirm
@@ -1228,7 +1298,7 @@ class SettingsFragment : Fragment() {
                         val intent = Intent(requireContext(), FeedingAlarmReceiver::class.java).apply {
                             putExtra("reminder_id", reminderId)
                             putExtra("recurrence_type", recurrenceType.name)
-                            putExtra("timestamp", triggerTime)
+                            putExtra("timestamp", finalTriggerTime)
                             putExtra("action_type", actionType)
                         }
 
@@ -1246,7 +1316,7 @@ class SettingsFragment : Fragment() {
                                 if (alarmManager.canScheduleExactAlarms()) {
                                     alarmManager.setExactAndAllowWhileIdle(
                                         AlarmManager.RTC_WAKEUP,
-                                        triggerTime,
+                                        finalTriggerTime,
                                         pendingIntent
                                     )
                                 } else {
@@ -1263,7 +1333,7 @@ class SettingsFragment : Fragment() {
                             } else {
                                 alarmManager.setExactAndAllowWhileIdle(
                                     AlarmManager.RTC_WAKEUP,
-                                    triggerTime,
+                                    finalTriggerTime,
                                     pendingIntent
                                 )
                             }
@@ -1278,23 +1348,23 @@ class SettingsFragment : Fragment() {
                             val recurrenceText = when (recurrenceType) {
                                 RecurrenceType.DAILY -> "Daily"
                                 RecurrenceType.WEEKLY -> "Weekly"
-                                RecurrenceType.NONE -> "One-time"
+                                RecurrenceType.ONE_TIME -> "One-time"
                             }
                             val actionLabelSnack = if (actionType == "CLEAN") "cleaning" else "feeding"
 
                             showReminderSuccessDialog(
                                 title = if (actionType == "CLEAN") "Cleaning reminder saved"
                                 else "Feeding reminder saved",
-                                message = "Reminder set for $date at $time $recurrenceText."
+                                message = "Reminder set for $dateToUse at $time $recurrenceText."
                             )
 
                             viewModel.loadFeedingReminders()
 
                             val newReminder = FeedingReminder(
                                 id = reminderId,
-                                date = date,
+                                date = dateToUse,
                                 time = time,
-                                timestamp = triggerTime,
+                                timestamp = finalTriggerTime,
                                 recurrence = recurrenceType,
                                 status = "scheduled",
                                 createdAt = System.currentTimeMillis(),
@@ -1392,9 +1462,42 @@ class SettingsFragment : Fragment() {
     }
 
     /**
-     * Toggle the visibility of the Advanced Settings section
+     * Toggle the visibility of the Developer Tools section
      */
+    private fun toggleDeveloperTools() {
+        val content = binding.developerToolsContent
+        val icon = binding.developerToolsExpandIcon
 
+        if (content.visibility == View.VISIBLE) {
+            content.visibility = View.GONE
+            icon.rotation = 0f
+        } else {
+            content.visibility = View.VISIBLE
+            icon.rotation = 180f
+        }
+    }
+
+    /**
+     * Show tank selection dialog for test alert generation
+     */
+    private fun showTankSelectionDialog() {
+        val tanks = viewModel.tanks.value
+        if (tanks.isEmpty()) {
+            Snackbar.make(binding.root, "No tanks available", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        val tankNames = tanks.map { it.displayName }.toTypedArray()
+
+        MaterialAlertDialogBuilder(requireContext(), R.style.CrabTrack_AlertDialog)
+            .setTitle(getString(R.string.select_tank_dialog_title))
+            .setItems(tankNames) { _, which ->
+                val selectedTank = tanks[which]
+                viewModel.generateTestAlert(selectedTank)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -1421,7 +1524,7 @@ class SettingsFragment : Fragment() {
         val recurrenceLabel = when (recurrenceType) {
             RecurrenceType.DAILY -> "Daily"
             RecurrenceType.WEEKLY -> "Weekly"
-            RecurrenceType.NONE -> "One-time"
+            RecurrenceType.ONE_TIME -> "One-time"
         }
 
         val actionLabel = when (actionType) {

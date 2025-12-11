@@ -12,6 +12,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.crabtrack.app.R
 import com.crabtrack.app.data.model.AlertSeverity
+import com.crabtrack.app.data.model.MoltingAlert
+import com.crabtrack.app.data.repository.MoltingAlertRepository
 import com.crabtrack.app.data.repository.TelemetryRepository
 import com.crabtrack.app.notification.NotificationHelper
 import com.crabtrack.app.presentation.MainActivity
@@ -93,11 +95,16 @@ class AlertMonitoringService : Service() {
     lateinit var telemetryRepository: TelemetryRepository
 
     @Inject
+    lateinit var moltingAlertRepository: MoltingAlertRepository
+
+    @Inject
     lateinit var notificationHelper: NotificationHelper
 
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var monitoringJob: Job? = null
+    private var moltingMonitoringJob: Job? = null
     private val notifiedAlerts = mutableSetOf<String>()
+    private val notifiedMoltingAlerts = mutableSetOf<String>()
     private var lastNotificationTime = 0L
     private val notificationCooldown = 30_000L // 30 seconds between similar alerts
 
@@ -126,14 +133,18 @@ class AlertMonitoringService : Service() {
                 val notification = createPersistentNotification()
                 startForeground(NOTIFICATION_ID, notification)
 
-                // Start monitoring Firebase
+                // Start monitoring Firebase for water quality alerts
                 startMonitoring()
+
+                // Start monitoring Firebase for molting alerts
+                startMoltingMonitoring()
 
                 android.util.Log.i(TAG, "Foreground service started successfully")
             }
             ACTION_STOP -> {
                 android.util.Log.i(TAG, "Stopping monitoring service")
                 stopMonitoring()
+                stopMoltingMonitoring()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -152,6 +163,7 @@ class AlertMonitoringService : Service() {
     override fun onDestroy() {
         android.util.Log.i(TAG, "Service destroyed")
         stopMonitoring()
+        stopMoltingMonitoring()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -190,6 +202,69 @@ class AlertMonitoringService : Service() {
         monitoringJob?.cancel()
         monitoringJob = null
         notifiedAlerts.clear()
+    }
+
+    /**
+     * Start monitoring Firebase for molting alerts
+     */
+    private fun startMoltingMonitoring() {
+        if (moltingMonitoringJob?.isActive == true) {
+            android.util.Log.d(TAG, "Molting monitoring already active")
+            return
+        }
+
+        android.util.Log.i(TAG, "Starting molting alert monitoring...")
+
+        // Start the global monitoring to copy alerts to user's path
+        moltingAlertRepository.startMonitoring()
+
+        moltingMonitoringJob = serviceScope.launch {
+            moltingAlertRepository.userAlerts
+                .catch { e ->
+                    android.util.Log.e(TAG, "Error in molting monitoring flow: ${e.message}", e)
+                }
+                .collect { alerts ->
+                    android.util.Log.d(TAG, "Received ${alerts.size} molting alerts")
+                    processMoltingAlerts(alerts)
+                }
+        }
+
+        android.util.Log.i(TAG, "Molting monitoring job launched")
+    }
+
+    /**
+     * Stop molting monitoring
+     */
+    private fun stopMoltingMonitoring() {
+        android.util.Log.i(TAG, "Stopping molting monitoring")
+        moltingMonitoringJob?.cancel()
+        moltingMonitoringJob = null
+        moltingAlertRepository.stopMonitoring()
+        notifiedMoltingAlerts.clear()
+    }
+
+    /**
+     * Process molting alerts and show notifications
+     */
+    private fun processMoltingAlerts(alerts: List<MoltingAlert>) {
+        alerts.forEach { alert ->
+            // Only notify for unread alerts that we haven't notified about yet
+            if (alert.status == MoltingAlert.STATUS_UNREAD && !notifiedMoltingAlerts.contains(alert.id)) {
+                android.util.Log.i(TAG, "Showing molting alert: ${alert.tankId} - ${alert.detectionClass} (${alert.confidence})")
+                notificationHelper.showMoltingAlert(
+                    tankName = alert.tankId,
+                    confidence = alert.confidence,
+                    detectionClass = alert.detectionClass
+                )
+                notifiedMoltingAlerts.add(alert.id)
+            }
+        }
+
+        // Clean up old notified alerts (keep last 50)
+        if (notifiedMoltingAlerts.size > 50) {
+            val toRemove = notifiedMoltingAlerts.size - 50
+            notifiedMoltingAlerts.toList().take(toRemove).forEach { notifiedMoltingAlerts.remove(it) }
+        }
     }
 
     /**
